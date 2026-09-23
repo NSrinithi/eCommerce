@@ -1,0 +1,43 @@
+/* Change these tokens to rebrand the entire application. No Tailwind/MUI setup required. */
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --brand: #1976d2;
+  --brand-hover: #1565c0;
+  --brand-soft: #eaf3fd;
+  --brand-text: #155b9d;
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --surface-hover: #f0f4f8;
+  --text: #182637;
+  --muted: #667589;
+  --line: #e1e7ef;
+  --input: #ffffff;
+  --success: #23774f;
+  --success-soft: #edf8f1;
+  --danger: #ba3030;
+  --danger-soft: #fff1f0;
+  --shadow: 0 6px 24px rgb(22 44 73 / 5%);
+  --radius: 10px;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --brand: #4c9ef1;
+  --brand-hover: #7fbaf5;
+  --brand-soft: #182f4a;
+  --brand-text: #9ecbfb;
+  --bg: #101720;
+  --surface: #182230;
+  --surface-hover: #213043;
+  --text: #e7eef8;
+  --muted: #a1afc2;
+  --line: #2b3a4d;
+  --input: #131d29;
+  --success: #79d8a6;
+  --success-soft: #183529;
+  --danger: #ff9991;
+  --danger-soft: #402426;
+  --shadow: none;
+}
+.outline-focus-none:focus {
+    outline: none;
+}
