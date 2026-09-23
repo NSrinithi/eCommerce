@@ -27,10 +27,10 @@ export function verifySession(token, config) {
 export function cookieOptions(config) {
   return {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: config.production,
+    secure: config.isProduction,
+    sameSite: config.isProduction ? 'none' : 'lax',
     path: '/api',
-    maxAge: config.sessionDays * 86400000
+    // keep your existing maxAge / other options
   };
 }
 export function clearSessionCookie(res, config) {
