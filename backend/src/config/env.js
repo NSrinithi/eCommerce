@@ -29,7 +29,7 @@ export function readEnv() {
     jwtSecret: JWT_SECRET,
     sessionDays,
     origins,
-    production,
+    isProduction: production,
     cookieName: process.env.COOKIE_NAME || 'mern_base_session',
     trustProxy: process.env.TRUST_PROXY === '1',
     serveClient: process.env.SERVE_CLIENT === 'true',
