@@ -102,51 +102,59 @@ export function EditProductPage() {
   // SUBMIT
   // -----------------------------
   async function submit(event) {
-    event.preventDefault();
+  event.preventDefault();
 
-    setBusy(true);
-    setError("");
-    setSuccess("");
+  setBusy(true);
+  setError("");
+  setSuccess("");
 
-    try {
-      const formData = new FormData();
-
-      formData.append("name", form.name);
-      formData.append("description", form.description);
-      formData.append("price", form.price);
-      formData.append("discountPrice", form.discountPrice);
-      formData.append("stock", form.stock);
-      formData.append("category", form.category);
-      formData.append("brand", form.brand);
-      formData.append("rating", form.rating);
-      formData.append("numReviews", form.numReviews);
-
-      // Backend currently requires an image
-      if (image) {
-        formData.append("image", image);
-      }
-
-      console.log("Updating product:", id);
-
-      const updatedProduct = await adminApi.updateProduct(
-        id,
-        formData
-      );
-
-      console.log("Updated product:", updatedProduct);
-
-      setSuccess("Product updated successfully.");
-
-      setTimeout(() => {
-        navigate("/admin/products");
-      }, 800);
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Failed to update product.");
-    } finally {
+  try {
+    if (!image) {
+      setError("Please select a new product image.");
       setBusy(false);
+      return;
     }
+
+    const formData = new FormData();
+
+    formData.append("name", form.name);
+    formData.append("description", form.description);
+    formData.append("price", form.price);
+    formData.append("discountPrice", form.discountPrice);
+    formData.append("stock", form.stock);
+    formData.append("category", form.category);
+    formData.append("brand", form.brand);
+    formData.append("rating", form.rating);
+    formData.append("numReviews", form.numReviews);
+
+    // IMPORTANT
+    formData.append("image", image);
+
+    console.log("========== EDIT PRODUCT ==========");
+    console.log("ID:", id);
+    console.log("Image:", image);
+
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+
+    const response = await adminApi.updateProduct(id, formData);
+
+    console.log("Update response:", response);
+
+    setSuccess("Product updated successfully.");
+
+    setTimeout(() => {
+      navigate("/admin/products");
+    }, 800);
+
+  } catch (err) {
+    console.error("UPDATE PRODUCT ERROR:", err);
+    setError(err.message || "Failed to update product.");
+  } finally {
+    setBusy(false);
   }
+}
 
   // -----------------------------
   // LOADING
