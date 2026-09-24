@@ -181,6 +181,7 @@ export function CheckOutPage() {
                         );
 
                         setAddress("");
+                        window.dispatchEvent(new Event('cart-updated'));
                         navigate("/orders");
                     } catch (error) {
                         setPaying(false);
