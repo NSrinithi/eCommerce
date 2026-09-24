@@ -14,7 +14,7 @@ import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage.jsx';
 import { AddProductPage } from '../pages/admin/AddProductPage.jsx';
 import { AdminProductsPage } from '../pages/admin/AdminProductsPage.jsx';
 import { EditProductPage } from '../pages/admin/EditProductPage.jsx';
-import { AdminOrderPage } from '../pages/admin/ADminOrderPage.jsx';
+import { AdminOrderPage } from '../pages/admin/AdminOrderPage.jsx';
 import { OrdersPage } from '../pages/orders/OrdersPage.jsx';
 import { CheckOutPage } from '../pages/checkout/CheckOutPage.jsx';
 import { NotFoundPage } from '../pages/NotFoundPage.jsx';
