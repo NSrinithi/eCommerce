@@ -92,3 +92,43 @@ export async function getAllOrders() {
         return orders;
     }
 }
+
+export async function updateOrderStatus(orderId, status) {
+
+    const allowedStatuses = [
+        "PLACED",
+        "CONFIRMED",
+        "SHIPPED",
+        "DELIVERED",
+        "CANCELLED"
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+        throw new AppError(
+            400,
+            "Invalid order status",
+            "INVALID_ORDER_STATUS"
+        );
+    }
+
+    const order = await Order.findByIdAndUpdate(
+        orderId,
+        {
+            status
+        },
+        {
+            new: true,
+            runValidators: true
+        }
+    ).populate("items.product").populate("user");
+
+    if (!order) {
+        throw new AppError(
+            404,
+            "Order not found",
+            "ORDER_NOT_FOUND"
+        );
+    }
+
+    return order;
+}

@@ -12,29 +12,34 @@ const orderSchema = new mongoose.Schema({
             ref: "Product",
             required: true
         },
-        quantity:{
-            type:Number,
-            required:true,
-            min:1
+        quantity: {
+            type: Number,
+            required: true,
+            min: 1
         },
-        price:{
-            type:Number,
-            required:true
+        price: {
+            type: Number,
+            required: true
         }
     }],
-    totalAmount:{
-        type:Number,
-        required:true
+    totalAmount: {
+        type: Number,
+        required: true
     },
-    shippingAddress:{
-        type:String,
-        required:true
+    shippingAddress: {
+        type: String,
+        required: true
     }
-    ,status:{
-        type:String,
-        required:true,
+    , status: {
+        type: String,
+        enum: [
+            "PLACED",
+            "CONFIRMED",
+            "SHIPPED",
+            "DELIVERED",
+            "CANCELLED"
+        ],
         default: "PLACED"
-
     },
     payment: {
         status: {
@@ -46,8 +51,8 @@ const orderSchema = new mongoose.Schema({
             type: String
         }
     }
-},{
-    timestamps:true
+}, {
+    timestamps: true
 })
 
-export const Order=mongoose.model("Order",orderSchema);
+export const Order = mongoose.model("Order", orderSchema);

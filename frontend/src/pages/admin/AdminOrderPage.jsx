@@ -1,490 +1,564 @@
+import { useState } from "react";
 import { useAsyncData } from "../../hooks/useAsyncData.js";
 import { orderApi } from "../../services/orderApi.js";
 import { LoadingScreen } from "../../components/ui/LoadingScreen.jsx";
 import { Alert } from "../../components/ui/Alert.jsx";
 
 export function AdminOrderPage() {
-  const {
-    data,
-    loading,
-    error,
-    reload,
-  } = useAsyncData(orderApi.getAll);
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
+    const {
+        data,
+        loading,
+        error,
+        reload
+    } = useAsyncData(orderApi.getAll);
 
-  const orders = Array.isArray(data)
-    ? data
-    : data?.data || [];
+    const [updatingOrder, setUpdatingOrder] = useState(null);
+    const [updateError, setUpdateError] = useState("");
 
-  // =============================
-  // STATS
-  // =============================
+    if (loading) {
+        return <LoadingScreen />;
+    }
 
-  const totalOrders = orders.length;
+    const orders = Array.isArray(data)
+        ? data
+        : data?.data || [];
 
-  const paidOrders = orders.filter(
-    (order) => order.payment?.status === "PAID"
-  ).length;
 
-  const pendingOrders = orders.filter(
-    (order) => order.payment?.status !== "PAID"
-  ).length;
+    // ============================================
+    // UPDATE STATUS
+    // ============================================
 
-  const totalRevenue = orders.reduce(
-    (total, order) =>
-      total + Number(order.totalAmount || 0),
-    0
-  );
+    async function handleStatusChange(orderId, status) {
 
-  return (
-    <main className="page admin-orders-page">
+        try {
 
-      {/* =========================================
-          HEADER
-      ========================================= */}
+            setUpdatingOrder(orderId);
+            setUpdateError("");
 
-      <div className="page-header admin-orders-title">
+            await orderApi.updateStatus(
+                orderId,
+                status
+            );
 
-        <div>
-          <p className="muted admin-breadcrumb">
-            Admin / Orders
-          </p>
+            // Reload orders so UI gets latest data
+            await reload();
 
-          <h1>Orders</h1>
+        } catch (err) {
 
-          <p className="muted">
-            Manage and view all customer orders.
-          </p>
-        </div>
+            console.error(
+                "Failed to update order status:",
+                err
+            );
 
-        <button
-          type="button"
-          className="button"
-          onClick={reload}
-        >
-          ↻ Refresh
-        </button>
+            setUpdateError(
+                err?.message ||
+                "Failed to update order status."
+            );
 
-      </div>
+        } finally {
 
-      {/* =========================================
-          STATS
-      ========================================= */}
+            setUpdatingOrder(null);
 
-      <div className="order-stats">
+        }
+    }
 
-        <div className="order-stat-card">
-          <div className="order-stat-icon">
-            📦
-          </div>
 
-          <div>
-            <span className="muted">
-              Total orders
-            </span>
+    return (
+        <main className="page">
 
-            <strong>
-              {totalOrders}
-            </strong>
-          </div>
-        </div>
+            {/* ================================= */}
+            {/* HEADER */}
+            {/* ================================= */}
 
-        <div className="order-stat-card">
-          <div className="order-stat-icon">
-            ✓
-          </div>
+            <div className="page-header">
 
-          <div>
-            <span className="muted">
-              Paid orders
-            </span>
+                <div>
 
-            <strong>
-              {paidOrders}
-            </strong>
-          </div>
-        </div>
+                    <h1>
+                        Orders
+                    </h1>
 
-        <div className="order-stat-card">
-          <div className="order-stat-icon">
-            ◷
-          </div>
+                    <p className="muted">
+                        Manage and view all customer orders.
+                    </p>
 
-          <div>
-            <span className="muted">
-              Pending payment
-            </span>
+                </div>
 
-            <strong>
-              {pendingOrders}
-            </strong>
-          </div>
-        </div>
 
-        <div className="order-stat-card">
-          <div className="order-stat-icon">
-            ₹
-          </div>
+                <button
+                    type="button"
+                    className="button"
+                    onClick={reload}
+                    disabled={updatingOrder !== null}
+                >
+                    Refresh
+                </button>
 
-          <div>
-            <span className="muted">
-              Total revenue
-            </span>
+            </div>
 
-            <strong>
-              ₹{totalRevenue.toLocaleString("en-IN")}
-            </strong>
-          </div>
-        </div>
 
-      </div>
+            {/* ================================= */}
+            {/* ERROR */}
+            {/* ================================= */}
 
-      {/* =========================================
-          ERROR
-      ========================================= */}
+            {error && (
+                <Alert>
+                    {error.message ||
+                        "Failed to load orders."}
+                </Alert>
+            )}
 
-      {error && (
-        <Alert>
-          {error.message || "Failed to load orders."}
-        </Alert>
-      )}
 
-      {/* =========================================
-          EMPTY
-      ========================================= */}
+            {updateError && (
+                <Alert>
+                    {updateError}
+                </Alert>
+            )}
 
-      {!error && orders.length === 0 && (
-        <div className="empty-state admin-empty-orders">
 
-          <div className="empty-order-icon">
-            📦
-          </div>
+            {/* ================================= */}
+            {/* EMPTY */}
+            {/* ================================= */}
 
-          <h2>No orders yet</h2>
+            {!error && orders.length === 0 && (
 
-          <p className="muted">
-            Customer orders will appear here once
-            customers place an order.
-          </p>
-
-        </div>
-      )}
-
-      {/* =========================================
-          ORDERS
-      ========================================= */}
-
-      {orders.length > 0 && (
-        <div className="admin-orders-list">
-
-          {orders.map((order) => {
-
-            const status =
-              order.status || "PLACED";
-
-            const paymentStatus =
-              order.payment?.status || "UNKNOWN";
-
-            return (
-              <article
-                key={order._id}
-                className="admin-order-card"
-              >
-
-                {/* =================================
-                    ORDER TOP
-                ================================= */}
-
-                <div className="admin-order-top">
-
-                  <div className="order-id-block">
-
-                    <span className="muted">
-                      ORDER
-                    </span>
+                <div className="empty-state">
 
                     <h2>
-                      #{order._id
-                        .slice(-8)
-                        .toUpperCase()}
+                        No orders yet
                     </h2>
 
                     <p className="muted">
-                      {order.createdAt
-                        ? new Date(
-                            order.createdAt
-                          ).toLocaleString(
-                            "en-IN",
-                            {
-                              dateStyle: "medium",
-                              timeStyle: "short",
-                            }
-                          )
-                        : "Date unavailable"}
+                        Customer orders will appear here.
                     </p>
-
-                  </div>
-
-                  <div className="order-badges">
-
-                    <span
-                      className={`order-status-badge status-${status.toLowerCase()}`}
-                    >
-                      {status}
-                    </span>
-
-                    <span
-                      className={`payment-badge ${
-                        paymentStatus === "PAID"
-                          ? "payment-paid"
-                          : "payment-pending"
-                      }`}
-                    >
-                      {paymentStatus}
-                    </span>
-
-                  </div>
 
                 </div>
 
-                {/* =================================
-                    ORDER CONTENT
-                ================================= */}
+            )}
 
-                <div className="admin-order-body">
 
-                  {/* CUSTOMER */}
+            {/* ================================= */}
+            {/* ORDERS */}
+            {/* ================================= */}
 
-                  <section className="order-info-box">
+            {orders.length > 0 && (
 
-                    <div className="order-section-title">
-                      <span>👤</span>
-                      Customer
-                    </div>
+                <div className="admin-orders">
 
-                    <strong>
-                      {order.user?.name ||
-                        "Customer"}
-                    </strong>
+                    {orders.map((order) => (
 
-                    {order.user?.email && (
-                      <p className="muted">
-                        {order.user.email}
-                      </p>
-                    )}
+                        <article
+                            key={order._id}
+                            className="admin-order-card"
+                        >
 
-                  </section>
+                            {/* ================================= */}
+                            {/* ORDER HEADER */}
+                            {/* ================================= */}
 
-                  {/* SHIPPING */}
+                            <div className="admin-order-header">
 
-                  <section className="order-info-box">
+                                <div>
 
-                    <div className="order-section-title">
-                      <span>📍</span>
-                      Shipping address
-                    </div>
+                                    <h2>
+                                        Order #
+                                        {order._id
+                                            .slice(-8)
+                                            .toUpperCase()}
+                                    </h2>
 
-                    <p>
-                      {order.shippingAddress ||
-                        "Not provided"}
-                    </p>
+                                    <p className="muted">
 
-                  </section>
+                                        {order.createdAt
+                                            ? new Date(
+                                                order.createdAt
+                                            ).toLocaleString(
+                                                "en-IN",
+                                                {
+                                                    dateStyle:
+                                                        "medium",
+                                                    timeStyle:
+                                                        "short"
+                                                }
+                                            )
+                                            : "Date unavailable"}
 
-                  {/* PAYMENT */}
+                                    </p>
 
-                  <section className="order-info-box">
-
-                    <div className="order-section-title">
-                      <span>💳</span>
-                      Payment
-                    </div>
-
-                    <strong>
-                      {paymentStatus}
-                    </strong>
-
-                    <p className="muted payment-id">
-                      {order.payment?.paymentId ||
-                        "No payment ID"}
-                    </p>
-
-                  </section>
-
-                </div>
-
-                {/* =================================
-                    PRODUCTS
-                ================================= */}
-
-                <div className="admin-order-products-section">
-
-                  <div className="order-section-heading">
-                    <h3>Products</h3>
-
-                    <span className="muted">
-                      {order.items?.length || 0} item
-                      {order.items?.length === 1
-                        ? ""
-                        : "s"}
-                    </span>
-                  </div>
-
-                  <div className="admin-order-products">
-
-                    {order.items?.map(
-                      (item, index) => {
-
-                        const product =
-                          item.product;
-
-                        return (
-                          <div
-                            className="admin-order-product"
-                            key={
-                              item._id ||
-                              `${order._id}-${index}`
-                            }
-                          >
-
-                            {/* IMAGE */}
-
-                            <div className="admin-order-product-image">
-
-                              {product?.images?.[0] ? (
-                                <img
-                                  src={
-                                    product.images[0]
-                                  }
-                                  alt={
-                                    product.name ||
-                                    "Product"
-                                  }
-                                />
-                              ) : (
-                                <div className="no-image">
-                                  📦
                                 </div>
-                              )}
+
+
+                                <div className="order-status-wrap">
+
+                                    {/* STATUS BADGE */}
+
+                                    <span
+                                        className={`order-status order-status--${(
+                                            order.status ||
+                                            "PLACED"
+                                        ).toLowerCase()}`}
+                                    >
+                                        {order.status ||
+                                            "PLACED"}
+                                    </span>
+
+
+                                    {/* PAYMENT STATUS */}
+
+                                    <span
+                                        className={`payment-status ${
+                                            order.payment
+                                                ?.status ===
+                                            "PAID"
+                                                ? "payment-paid"
+                                                : "payment-pending"
+                                        }`}
+                                    >
+                                        {order.payment
+                                            ?.status ||
+                                            "UNKNOWN"}
+                                    </span>
+
+                                </div>
 
                             </div>
 
-                            {/* DETAILS */}
 
-                            <div className="admin-order-product-info">
+                            {/* ================================= */}
+                            {/* UPDATE STATUS */}
+                            {/* ================================= */}
 
-                              <strong>
-                                {product?.name ||
-                                  "Product unavailable"}
-                              </strong>
+                            <div
+                                className="admin-order-section"
+                                style={{
+                                    background:
+                                        "#f8fafc",
+                                    padding:
+                                        "16px",
+                                    borderRadius:
+                                        "10px"
+                                }}
+                            >
 
-                              {product?.brand && (
-                                <span className="muted">
-                                  {product.brand}
-                                </span>
-                              )}
+                                <h3>
+                                    Update Order Status
+                                </h3>
 
-                              <div className="product-meta">
+                                <div
+                                    style={{
+                                        display:
+                                            "flex",
+                                        alignItems:
+                                            "center",
+                                        gap:
+                                            "12px",
+                                        flexWrap:
+                                            "wrap"
+                                    }}
+                                >
 
-                                <span>
-                                  Qty:{" "}
-                                  <strong>
-                                    {item.quantity}
-                                  </strong>
-                                </span>
+                                    <select
+                                        value={
+                                            order.status ||
+                                            "PLACED"
+                                        }
+                                        disabled={
+                                            updatingOrder ===
+                                            order._id
+                                        }
+                                        onChange={(event) =>
+                                            handleStatusChange(
+                                                order._id,
+                                                event.target
+                                                    .value
+                                            )
+                                        }
+                                        style={{
+                                            padding:
+                                                "10px 14px",
+                                            border:
+                                                "1px solid #d1d5db",
+                                            borderRadius:
+                                                "8px",
+                                            background:
+                                                "white",
+                                            minWidth:
+                                                "180px",
+                                            fontSize:
+                                                "14px",
+                                            cursor:
+                                                "pointer"
+                                        }}
+                                    >
 
-                                <span>
-                                  ₹
-                                  {Number(
-                                    item.price || 0
-                                  ).toLocaleString(
-                                    "en-IN"
-                                  )}{" "}
-                                  each
-                                </span>
+                                        <option value="PLACED">
+                                            Placed
+                                        </option>
 
-                              </div>
+                                        <option value="PROCESSING">
+                                            Processing
+                                        </option>
+
+                                        <option value="SHIPPED">
+                                            Shipped
+                                        </option>
+
+                                        <option value="DELIVERED">
+                                            Delivered
+                                        </option>
+
+                                        <option value="CANCELLED">
+                                            Cancelled
+                                        </option>
+
+                                    </select>
+
+
+                                    {updatingOrder ===
+                                        order._id && (
+
+                                        <span className="muted">
+                                            Updating...
+                                        </span>
+
+                                    )}
+
+                                </div>
 
                             </div>
 
-                            {/* TOTAL */}
 
-                            <div className="admin-order-product-total">
+                            {/* ================================= */}
+                            {/* CUSTOMER */}
+                            {/* ================================= */}
 
-                              <span className="muted">
-                                Item total
-                              </span>
+                            <div className="admin-order-section">
 
-                              <strong>
-                                ₹
-                                {(
-                                  Number(
-                                    item.price || 0
-                                  ) *
-                                  Number(
-                                    item.quantity || 0
-                                  )
-                                ).toLocaleString(
-                                  "en-IN"
+                                <h3>
+                                    Customer
+                                </h3>
+
+                                <p>
+
+                                    <strong>
+                                        {order.user?.name ||
+                                            "Customer"}
+                                    </strong>
+
+                                </p>
+
+
+                                {order.user?.email && (
+
+                                    <p className="muted">
+                                        {order.user.email}
+                                    </p>
+
                                 )}
-                              </strong>
 
                             </div>
 
-                          </div>
-                        );
-                      }
-                    )}
 
-                  </div>
+                            {/* ================================= */}
+                            {/* PRODUCTS */}
+                            {/* ================================= */}
+
+                            <div className="admin-order-section">
+
+                                <h3>
+                                    Products
+                                </h3>
+
+
+                                <div className="admin-order-products">
+
+                                    {order.items?.map(
+                                        (item, index) => {
+
+                                            const product =
+                                                item.product;
+
+                                            return (
+
+                                                <div
+                                                    className="admin-order-product"
+                                                    key={
+                                                        item._id ||
+                                                        `${order._id}-${index}`
+                                                    }
+                                                >
+
+                                                    {/* IMAGE */}
+
+                                                    <div className="admin-order-product-image">
+
+                                                        {product?.images?.[0] ? (
+
+                                                            <img
+                                                                src={
+                                                                    product
+                                                                        .images[0]
+                                                                }
+                                                                alt={
+                                                                    product.name
+                                                                }
+                                                            />
+
+                                                        ) : (
+
+                                                            <div className="no-image">
+                                                                No image
+                                                            </div>
+
+                                                        )}
+
+                                                    </div>
+
+
+                                                    {/* DETAILS */}
+
+                                                    <div className="admin-order-product-info">
+
+                                                        <strong>
+
+                                                            {product?.name ||
+                                                                "Product unavailable"}
+
+                                                        </strong>
+
+
+                                                        {product?.brand && (
+
+                                                            <span className="muted">
+                                                                {
+                                                                    product.brand
+                                                                }
+                                                            </span>
+
+                                                        )}
+
+
+                                                        <span>
+                                                            Quantity:{" "}
+                                                            {
+                                                                item.quantity
+                                                            }
+                                                        </span>
+
+
+                                                        <span>
+                                                            Price: ₹
+                                                            {Number(
+                                                                item.price ||
+                                                                0
+                                                            ).toLocaleString(
+                                                                "en-IN"
+                                                            )}
+                                                        </span>
+
+                                                    </div>
+
+
+                                                    {/* ITEM TOTAL */}
+
+                                                    <div className="admin-order-product-total">
+
+                                                        ₹
+                                                        {(
+                                                            Number(
+                                                                item.price ||
+                                                                0
+                                                            ) *
+                                                            Number(
+                                                                item.quantity ||
+                                                                0
+                                                            )
+                                                        ).toLocaleString(
+                                                            "en-IN"
+                                                        )}
+
+                                                    </div>
+
+                                                </div>
+
+                                            );
+
+                                        }
+                                    )}
+
+                                </div>
+
+                            </div>
+
+
+                            {/* ================================= */}
+                            {/* SHIPPING */}
+                            {/* ================================= */}
+
+                            <div className="admin-order-section">
+
+                                <h3>
+                                    Shipping Address
+                                </h3>
+
+                                <p>
+                                    {order.shippingAddress ||
+                                        "Not provided"}
+                                </p>
+
+                            </div>
+
+
+                            {/* ================================= */}
+                            {/* FOOTER */}
+                            {/* ================================= */}
+
+                            <div className="admin-order-footer">
+
+                                <div>
+
+                                    <span className="muted">
+                                        Payment ID
+                                    </span>
+
+                                    <strong>
+                                        {order.payment
+                                            ?.paymentId ||
+                                            "Not available"}
+                                    </strong>
+
+                                </div>
+
+
+                                <div className="admin-order-total">
+
+                                    <span>
+                                        Total
+                                    </span>
+
+                                    <strong>
+                                        ₹
+                                        {Number(
+                                            order.totalAmount ||
+                                            0
+                                        ).toLocaleString(
+                                            "en-IN"
+                                        )}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+                    ))}
 
                 </div>
 
-                {/* =================================
-                    FOOTER
-                ================================= */}
+            )}
 
-                <div className="admin-order-footer">
-
-                  <div className="order-payment-method">
-
-                    <span className="muted">
-                      Payment
-                    </span>
-
-                    <strong>
-                      Razorpay
-                    </strong>
-
-                  </div>
-
-                  <div className="admin-order-total">
-
-                    <span className="muted">
-                      Order total
-                    </span>
-
-                    <strong>
-                      ₹
-                      {Number(
-                        order.totalAmount || 0
-                      ).toLocaleString("en-IN")}
-                    </strong>
-
-                  </div>
-
-                </div>
-
-              </article>
-            );
-          })}
-
-        </div>
-      )}
-
-    </main>
-  );
+        </main>
+    );
 }
