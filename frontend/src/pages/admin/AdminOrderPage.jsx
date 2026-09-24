@@ -10,7 +10,7 @@ export function AdminOrderPage() {
     error,
     reload,
   } = useAsyncData(orderApi.getAll);
-  console.log("data:"+data);
+  console.log("data:"+data?.user);
 
   if (loading) {
     return <LoadingScreen />;
@@ -19,6 +19,8 @@ export function AdminOrderPage() {
   const orders = Array.isArray(data)
     ? data
     : data?.data || [];
+
+    console.log(orders);
 
   return (
     <main className="page">
