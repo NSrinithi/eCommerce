@@ -6,7 +6,6 @@ import { Brand } from './Brand.jsx';
 import { Icon } from '../ui/Icon.jsx';
 
 export function Sidebar({
-  collapsed,
   onToggle,
   mobileOpen,
   onClose

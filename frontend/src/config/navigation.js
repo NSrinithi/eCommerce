@@ -39,3 +39,11 @@ export function getNavigation(role) {
     },
   ];
 }
+
+export const pageTitles = {
+  '/products': 'Products',
+  '/cart': 'Cart',
+  '/orders': 'Orders',
+  '/profile': 'My profile',
+  '/admin/dashboard': 'Admin Dashboard',
+};
