@@ -8,11 +8,45 @@ export async function createOrder(userId, address, paymentId) {
         throw new AppError(404, "Cart not found", "CART_NOT_FOUND");
     }
     else {
+        for (const item of cart.items) {
+
+            if (!item.product) {
+                throw new AppError(
+                    404,
+                    "Product not found",
+                    "PRODUCT_NOT_FOUND"
+                );
+            }
+
+            if (item.quantity > item.product.stock) {
+                throw new AppError(
+                    400,
+                    `Only ${item.product.stock} units of ${item.product.name} are available`,
+                    "INSUFFICIENT_STOCK"
+                );
+            }
+        }
         const orderItems = cart.items.map(x => ({
             product: x.product._id,
             quantity: x.quantity,
             price: x.product.discountPrice ?? x.product.price
         }))
+
+        for (const item of cart.items) {
+
+            await Product.findByIdAndUpdate(
+                item.product._id,
+                {
+                    $inc: {
+                        stock: -item.quantity
+                    }
+                },
+                {
+                    new: true
+                }
+            );
+        }
+
         const totalAmount = orderItems.reduce((total, items) => total + items.price * items.quantity, 0)
         const order = await Order.create({
             user: cart.user,
