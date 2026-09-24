@@ -66,7 +66,7 @@ export async function createOrder(userId, address, paymentId) {
 }
 
 export async function getOrders(userId) {
-    const orders = await Order.find({ user: userId }).populate("items.product").populate("user");
+    const orders = await Order.find({ user: userId }).populate("items.product");
     console.log(orders);
     if (orders.length === 0) {
         throw new AppError(404, "orders not found", "ORDER_NOT_FOUND");
@@ -85,7 +85,7 @@ export async function getOrdersById(userId, orderId) {
 }
 
 export async function getAllOrders() {
-    const orders = await Order.find().populate("items.product");
+    const orders = await Order.find().populate("items.product").populate("user");
     if (orders.length === 0) {
         throw new AppError(404, "orders not found", "ORDER_NOT_FOUND");
     } else {
