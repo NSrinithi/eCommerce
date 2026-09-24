@@ -1,5 +1,6 @@
 import { Cart } from "../models/Cart.js";
 import { Order } from "../models/Order.js";
+import { Product } from "../models/Product.js";
 import { AppError } from "../utils/AppError.js";
 
 export async function createOrder(userId, address, paymentId) {
