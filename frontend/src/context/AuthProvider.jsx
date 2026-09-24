@@ -43,6 +43,7 @@ export function AuthProvider({ children }) {
     const data = await authApi.login(input);
     setUser(data.user);
     setStatus('ready');
+    return data.user;
   }
   async function logout() {
     // A failed server logout is shown to the user; do not pretend the session was revoked.

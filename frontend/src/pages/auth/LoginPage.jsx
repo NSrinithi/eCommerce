@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Alert } from '../../components/ui/Alert.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 export function LoginPage() {
-  const { login, user } = useAuth();
+  const { login} = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -30,7 +30,7 @@ export function LoginPage() {
       // }
       console.log('Logged in user:', loggedInUser);
       console.log('Role:', loggedInUser?.role);
-      if (user?.role === 'ADMIN') {
+      if (loggedInUser?.role === 'ADMIN') {
         navigate('/admin/dashboard', { replace: true });
       } else {
         navigate('/products', { replace: true });
