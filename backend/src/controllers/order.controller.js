@@ -73,7 +73,7 @@ export async function updateOrderStatus(req, res) {
         const { id } = req.params;
         const { status } = req.body;
 
-        const order = await updateOrderStatusService(
+        const order = await os.updateOrderStatus(
             id,
             status
         );
