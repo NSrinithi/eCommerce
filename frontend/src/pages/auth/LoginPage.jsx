@@ -30,7 +30,7 @@ export function LoginPage() {
       }
 
       if (user?.role === 'ADMIN') {
-        navigate('/admin', { replace: true });
+        navigate('/admin/dashboard', { replace: true });
       } else {
         navigate('/products', { replace: true });
       }
