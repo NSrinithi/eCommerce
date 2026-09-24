@@ -539,7 +539,7 @@ export function AdminProductsPage() {
 
                                         {/* CHECKBOX */}
 
-                                        <td>
+                                        {/* <td>
                                             <input
                                                 type="checkbox"
                                                 checked={selectedProducts.includes(
@@ -551,7 +551,7 @@ export function AdminProductsPage() {
                                                     )
                                                 }
                                             />
-                                        </td>
+                                        </td> */}
 
 
                                         {/* PRODUCT */}

@@ -1,667 +1,493 @@
 import { useEffect, useState } from "react";
-import { adminApi } from "../../services/adminApi";
-import { useNavigate, useParams, Link } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
-const CATEGORIES = [
-    "Electronics",
-    "Audio",
-    "Computer Accessories",
-    "Books & Reading",
-    "Kitchen",
-    "Kitchen Appliances",
-    "Toys",
-    "Watches",
-    "Fashion",
-    "Clothing",
-    "Bags",
-    "Travel",
-    "Beauty & Personal Care",
-    "Home Appliances",
-];
+import { adminApi } from "../../services/adminApi.js";
+import { Field } from "../../components/ui/Field.jsx";
+import { Button } from "../../components/ui/Button.jsx";
+import { Alert } from "../../components/ui/Alert.jsx";
 
 export function EditProductPage() {
-    const navigate = useNavigate();
-    const { id } = useParams();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-    const [form, setForm] = useState({
-        name: "",
-        description: "",
-        brand: "",
-        category: "",
-        price: "",
-        discountPrice: "",
-        stock: "",
-        rating: "",
-        numReviews: "",
-    });
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    discountPrice: "",
+    stock: "",
+    category: "",
+    brand: "",
+    rating: "",
+    numReviews: "",
+  });
 
-    const [image, setImage] = useState(null);
-    const [preview, setPreview] = useState("");
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState("");
+  const [currentImage, setCurrentImage] = useState("");
+  const [newImage, setNewImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState("");
 
-    // -----------------------------
-    // Load product
-    // -----------------------------
-    useEffect(() => {
-        async function loadProduct() {
-            try {
-                setLoading(true);
-                setError("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-                const response = await adminApi.getProductById(id);
+  // ==========================================
+  // LOAD PRODUCT
+  // ==========================================
 
-                console.log("Product response:", response);
-
-                // Handles common response structures
-                const product =
-                    response?.data?.product ||
-                    response?.product ||
-                    response?.data ||
-                    response;
-
-                if (!product) {
-                    throw new Error("Product not found.");
-                }
-
-                setForm({
-                    name: product.name || "",
-                    description: product.description || "",
-                    brand: product.brand || "",
-                    category: product.category || "",
-                    price: product.price ?? "",
-                    discountPrice: product.discountPrice ?? "",
-                    stock: product.stock ?? "",
-                    rating: product.rating ?? "",
-                    numReviews: product.numReviews ?? "",
-                });
-
-                // Existing product image
-                if (product.images?.length > 0) {
-                    setPreview(product.images[0]);
-                }
-            } catch (err) {
-                console.error("Failed to load product:", err);
-
-                setError(
-                    err.message || "Failed to load product."
-                );
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        if (id) {
-            loadProduct();
-        }
-    }, [id]);
-
-    // -----------------------------
-    // Input change
-    // -----------------------------
-    function handleChange(e) {
-        const { name, value } = e.target;
-
-        setForm((current) => ({
-            ...current,
-            [name]: value,
-        }));
-    }
-
-    // -----------------------------
-    // Image change
-    // -----------------------------
-    function handleImageChange(e) {
-        const file = e.target.files?.[0];
-
-        if (!file) return;
-
-        if (!file.type.startsWith("image/")) {
-            setError("Please select an image file.");
-            return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-            setError("Image must be smaller than 5 MB.");
-            return;
-        }
-
+  useEffect(() => {
+    async function loadProduct() {
+      try {
+        setLoading(true);
         setError("");
-        setImage(file);
-        setPreview(URL.createObjectURL(file));
+
+        const product = await adminApi.getProductById(id);
+
+        console.log("EDIT PRODUCT:", product);
+
+        setForm({
+          name: product.name || "",
+          description: product.description || "",
+          price: product.price ?? "",
+          discountPrice: product.discountPrice ?? "",
+          stock: product.stock ?? "",
+          category: product.category || "",
+          brand: product.brand || "",
+          rating: product.rating ?? "",
+          numReviews: product.numReviews ?? "",
+        });
+
+        if (product.images && product.images.length > 0) {
+          setCurrentImage(product.images[0]);
+        }
+      } catch (err) {
+        console.error("LOAD PRODUCT ERROR:", err);
+        setError(err.message || "Failed to load product.");
+      } finally {
+        setLoading(false);
+      }
     }
 
-    // -----------------------------
-    // Validation
-    // -----------------------------
-    function validateForm() {
-        if (!form.name.trim()) {
-            return "Product name is required.";
-        }
-
-        if (!form.description.trim()) {
-            return "Product description is required.";
-        }
-
-        if (!form.category) {
-            return "Please select a category.";
-        }
-
-        if (!form.price || Number(form.price) <= 0) {
-            return "Please enter a valid price.";
-        }
-
-        if (
-            form.discountPrice !== "" &&
-            Number(form.discountPrice) > Number(form.price)
-        ) {
-            return "Discount price cannot be greater than the original price.";
-        }
-
-        if (
-            form.stock === "" ||
-            Number(form.stock) < 0
-        ) {
-            return "Please enter a valid stock quantity.";
-        }
-
-        if (
-            form.rating !== "" &&
-            (Number(form.rating) < 0 ||
-                Number(form.rating) > 5)
-        ) {
-            return "Rating must be between 0 and 5.";
-        }
-
-        return "";
+    if (id) {
+      loadProduct();
     }
+  }, [id]);
 
-    // -----------------------------
-    // Submit
-    // -----------------------------
-    async function handleSubmit(e) {
-        e.preventDefault();
+  // ==========================================
+  // INPUT CHANGE
+  // ==========================================
 
-        const validationError = validateForm();
+  function handleChange(event) {
+    const { name, value } = event.target;
 
-        if (validationError) {
-            setError(validationError);
-            return;
-        }
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
 
-        try {
-            setSaving(true);
-            setError("");
+    setError("");
+    setSuccess("");
+  }
 
-            const formData = new FormData();
+  // ==========================================
+  // IMAGE CHANGE
+  // ==========================================
 
-            formData.append(
-                "name",
-                form.name.trim()
-            );
+  function handleImageChange(event) {
+    const file = event.target.files?.[0];
 
-            formData.append(
-                "description",
-                form.description.trim()
-            );
+    if (!file) return;
 
-            formData.append(
-                "brand",
-                form.brand.trim()
-            );
+    setNewImage(file);
 
-            formData.append(
-                "category",
-                form.category
-            );
+    // Preview new image
+    const imageUrl = URL.createObjectURL(file);
+    setPreviewImage(imageUrl);
 
-            formData.append(
-                "price",
-                form.price
-            );
+    setError("");
+    setSuccess("");
+  }
 
-            formData.append(
-                "discountPrice",
-                form.discountPrice || form.price
-            );
+  // ==========================================
+  // SUBMIT
+  // ==========================================
 
-            formData.append(
-                "stock",
-                form.stock
-            );
+  async function handleSubmit(event) {
+    event.preventDefault();
 
-            formData.append(
-                "rating",
-                form.rating || "0"
-            );
+    setBusy(true);
+    setError("");
+    setSuccess("");
 
-            formData.append(
-                "numReviews",
-                form.numReviews || "0"
-            );
+    try {
+      const formData = new FormData();
 
-            // Only send image if admin selected a new one
-            if (image) {
-                formData.append("images", image);
-            }
+      formData.append("name", form.name);
+      formData.append("description", form.description);
+      formData.append("price", form.price);
+      formData.append("discountPrice", form.discountPrice);
+      formData.append("stock", form.stock);
+      formData.append("category", form.category);
+      formData.append("brand", form.brand);
+      formData.append("rating", form.rating);
+      formData.append("numReviews", form.numReviews);
 
-            console.log("Updating product:", id);
+      // Backend currently requires image
+      if (newImage) {
+        formData.append("image", newImage);
+      }
 
-            for (const [key, value] of formData.entries()) {
-                console.log(key, value);
-            }
+      console.log("UPDATING ID:", id);
 
-            await adminApi.updateProduct(id, formData);
+      const result = await adminApi.updateProduct(id, formData);
 
-            navigate("/admin/products");
-        } catch (err) {
-            console.error("Update product error:", err);
+      console.log("UPDATE RESULT:", result);
 
-            setError(
-                err.message ||
-                "Failed to update product."
-            );
-        } finally {
-            setSaving(false);
-        }
+      setSuccess("Product updated successfully!");
+
+      setTimeout(() => {
+        navigate("/admin/products");
+      }, 1000);
+    } catch (err) {
+      console.error("UPDATE ERROR:", err);
+      setError(err.message || "Failed to update product.");
+    } finally {
+      setBusy(false);
     }
+  }
 
-    // -----------------------------
-    // Loading
-    // -----------------------------
-    if (loading) {
-        return (
-            <div className="admin-page">
-                <p>Loading product...</p>
-            </div>
-        );
-    }
+  // ==========================================
+  // LOADING UI
+  // ==========================================
 
-    // -----------------------------
-    // Error
-    // -----------------------------
-    if (error && !form.name) {
-        return (
-            <div className="admin-page">
-                <div className="admin-form-error">
-                    {error}
-                </div>
-
-                <Link
-                    to="/admin/products"
-                    className="admin-secondary-button"
-                >
-                    ← Back to Products
-                </Link>
-            </div>
-        );
-    }
-
+  if (loading) {
     return (
-        <div className="admin-page">
+      <main className="page">
+        <section className="auth-card">
+          <h1>Edit Product</h1>
+          <p className="muted">Loading product...</p>
+        </section>
+      </main>
+    );
+  }
 
-            {/* Header */}
-            <div className="admin-page-header">
+  // ==========================================
+  // UI
+  // ==========================================
 
-                <div>
-                    <p className="admin-eyebrow">
-                        CATALOG
-                    </p>
+  return (
+    <main className="page">
 
-                    <h1>Edit Product</h1>
+      {/* ================= HEADER ================= */}
 
-                    <p>
-                        Update the details of your product.
-                    </p>
-                </div>
+      <div className="page-header">
+        <div>
+          <h1>Edit Product</h1>
+          <p className="muted">
+            Update your product information.
+          </p>
+        </div>
 
-                <Link
-                    to="/admin/products"
-                    className="admin-secondary-button"
-                >
-                    ← Back to Products
-                </Link>
+        <Button
+          type="button"
+          onClick={() => navigate("/admin/products")}
+        >
+          Back to Products
+        </Button>
+      </div>
+
+      {/* ================= ALERTS ================= */}
+
+      {error && (
+        <Alert>
+          {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert tone="success">
+          {success}
+        </Alert>
+      )}
+
+      {/* ================= FORM ================= */}
+
+      <form
+        className="form-stack"
+        onSubmit={handleSubmit}
+        encType="multipart/form-data"
+      >
+
+        {/* ========================================
+            IMAGE SECTION
+        ======================================== */}
+
+        <section className="auth-card">
+
+          <h2>Product Image</h2>
+
+          <p className="muted">
+            Update the main image of your product.
+          </p>
+
+          {/* Current / Preview Image */}
+
+          <div
+            style={{
+              marginTop: "20px",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            {(previewImage || currentImage) && (
+              <img
+                src={previewImage || currentImage}
+                alt={form.name}
+                style={{
+                  width: "260px",
+                  height: "260px",
+                  objectFit: "contain",
+                  borderRadius: "12px",
+                  border: "1px solid #ddd",
+                  background: "#fff",
+                  padding: "10px",
+                }}
+              />
+            )}
+          </div>
+
+          {/* File input */}
+
+          <div
+            className="field"
+            style={{ marginTop: "20px" }}
+          >
+            <label htmlFor="image">
+              Product image
+            </label>
+
+            <input
+              id="image"
+              type="file"
+              name="image"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleImageChange}
+              disabled={busy}
+            />
+
+            <p className="muted">
+              {newImage
+                ? `Selected: ${newImage.name}`
+                : "Choose a new image to replace the current image."}
+            </p>
+
+            <p className="muted">
+              JPG, PNG or WEBP
+            </p>
+
+            <p className="muted">
+              Maximum size: 5 MB
+            </p>
+          </div>
+
+        </section>
+
+        {/* ========================================
+            BASIC INFORMATION
+        ======================================== */}
+
+        <section className="auth-card">
+
+          <h2>Basic Information</h2>
+
+          <p className="muted">
+            Update the main details of your product.
+          </p>
+
+          <div className="form-stack">
+
+            <Field
+              label="Product Name"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              required
+              disabled={busy}
+              placeholder="Enter product name"
+            />
+
+            <div className="field">
+
+              <label htmlFor="description">
+                Description
+              </label>
+
+              <textarea
+                id="description"
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                required
+                disabled={busy}
+                rows={5}
+                placeholder="Enter product description"
+              />
 
             </div>
 
-            {/* Error */}
-            {error && (
-                <div className="admin-form-error">
-                    {error}
-                </div>
-            )}
-
-            <form
-                className="admin-product-form"
-                onSubmit={handleSubmit}
-            >
-
-                {/* IMAGE */}
-                <section className="admin-form-card">
-
-                    <div className="admin-form-card-header">
-                        <div>
-                            <h2>Product Image</h2>
-
-                            <p>
-                                Change the product image if needed.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="admin-image-upload">
-
-                        <div className="admin-image-preview">
-
-                            {preview ? (
-                                <img
-                                    src={preview}
-                                    alt="Product preview"
-                                />
-                            ) : (
-                                <div className="admin-image-placeholder">
-                                    <span>＋</span>
-                                    <p>
-                                        No image selected
-                                    </p>
-                                </div>
-                            )}
-
-                        </div>
-
-                        <div className="admin-image-upload-info">
-
-                            <label
-                                htmlFor="product-image"
-                                className="admin-upload-button"
-                            >
-                                Choose New Image
-                            </label>
-
-                            <input
-                                id="product-image"
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                hidden
-                            />
-
-                            <p>
-                                JPG, PNG or WEBP
-                            </p>
-
-                            <p>
-                                Maximum size: 5 MB
-                            </p>
-
-                            {image && (
-                                <strong>
-                                    {image.name}
-                                </strong>
-                            )}
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-                {/* BASIC INFORMATION */}
-                <section className="admin-form-card">
-
-                    <div className="admin-form-card-header">
-                        <div>
-                            <h2>
-                                Basic Information
-                            </h2>
-
-                            <p>
-                                Update the main details of your product.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="admin-form-grid">
-
-                        {/* Name */}
-                        <div className="admin-form-field full">
-
-                            <label htmlFor="name">
-                                Product Name *
-                            </label>
-
-                            <input
-                                id="name"
-                                name="name"
-                                value={form.name}
-                                onChange={handleChange}
-                                placeholder="e.g. Apple AirPods 4"
-                            />
-
-                        </div>
-
-                        {/* Brand */}
-                        <div className="admin-form-field">
-
-                            <label htmlFor="brand">
-                                Brand
-                            </label>
-
-                            <input
-                                id="brand"
-                                name="brand"
-                                value={form.brand}
-                                onChange={handleChange}
-                                placeholder="e.g. Apple"
-                            />
-
-                        </div>
-
-                        {/* Category */}
-                        <div className="admin-form-field">
-
-                            <label htmlFor="category">
-                                Category *
-                            </label>
-
-                            <select
-                                id="category"
-                                name="category"
-                                value={form.category}
-                                onChange={handleChange}
-                            >
-
-                                <option value="">
-                                    Select category
-                                </option>
-
-                                {CATEGORIES.map((category) => (
-                                    <option
-                                        key={category}
-                                        value={category}
-                                    >
-                                        {category}
-                                    </option>
-                                ))}
-
-                            </select>
-
-                        </div>
-
-                        {/* Description */}
-                        <div className="admin-form-field full">
-
-                            <label htmlFor="description">
-                                Description *
-                            </label>
-
-                            <textarea
-                                id="description"
-                                name="description"
-                                value={form.description}
-                                onChange={handleChange}
-                                rows="5"
-                                placeholder="Describe the product..."
-                            />
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-                {/* PRICING & INVENTORY */}
-                <section className="admin-form-card">
-
-                    <div className="admin-form-card-header">
-
-                        <div>
-                            <h2>
-                                Pricing & Inventory
-                            </h2>
-
-                            <p>
-                                Update pricing and available stock.
-                            </p>
-                        </div>
-
-                    </div>
-
-                    <div className="admin-form-grid">
-
-                        {/* Original price */}
-                        <div className="admin-form-field">
-
-                            <label htmlFor="price">
-                                Original Price *
-                            </label>
-
-                            <div className="admin-input-prefix">
-
-                                <span>₹</span>
-
-                                <input
-                                    id="price"
-                                    name="price"
-                                    type="number"
-                                    min="0"
-                                    value={form.price}
-                                    onChange={handleChange}
-                                />
-
-                            </div>
-
-                        </div>
-
-                        {/* Selling price */}
-                        <div className="admin-form-field">
-
-                            <label htmlFor="discountPrice">
-                                Selling Price
-                            </label>
-
-                            <div className="admin-input-prefix">
-
-                                <span>₹</span>
-
-                                <input
-                                    id="discountPrice"
-                                    name="discountPrice"
-                                    type="number"
-                                    min="0"
-                                    value={form.discountPrice}
-                                    onChange={handleChange}
-                                />
-
-                            </div>
-
-                        </div>
-
-                        {/* Stock */}
-                        <div className="admin-form-field">
-
-                            <label htmlFor="stock">
-                                Stock *
-                            </label>
-
-                            <input
-                                id="stock"
-                                name="stock"
-                                type="number"
-                                min="0"
-                                value={form.stock}
-                                onChange={handleChange}
-                            />
-
-                        </div>
-
-                        {/* Rating */}
-                        <div className="admin-form-field">
-
-                            <label htmlFor="rating">
-                                Rating
-                            </label>
-
-                            <input
-                                id="rating"
-                                name="rating"
-                                type="number"
-                                min="0"
-                                max="5"
-                                step="0.1"
-                                value={form.rating}
-                                onChange={handleChange}
-                            />
-
-                        </div>
-
-                        {/* Reviews */}
-                        <div className="admin-form-field">
-
-                            <label htmlFor="numReviews">
-                                Number of Reviews
-                            </label>
-
-                            <input
-                                id="numReviews"
-                                name="numReviews"
-                                type="number"
-                                min="0"
-                                value={form.numReviews}
-                                onChange={handleChange}
-                            />
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-                {/* ACTIONS */}
-                <div className="admin-form-actions">
-
-                    <Link
-                        to="/admin/products"
-                        className="admin-secondary-button"
-                    >
-                        Cancel
-                    </Link>
-
-                    <button
-                        type="submit"
-                        className="admin-primary-button"
-                        disabled={saving}
-                    >
-                        {saving
-                            ? "Saving Changes..."
-                            : "Save Changes"}
-                    </button>
-
-                </div>
-
-            </form>
+            <Field
+              label="Brand"
+              name="brand"
+              value={form.brand}
+              onChange={handleChange}
+              required
+              disabled={busy}
+              placeholder="Example: Philips"
+            />
+
+            <Field
+              label="Category"
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              required
+              disabled={busy}
+              placeholder="Example: Electronics"
+            />
+
+          </div>
+
+        </section>
+
+        {/* ========================================
+            PRICING
+        ======================================== */}
+
+        <section className="auth-card">
+
+          <h2>Pricing</h2>
+
+          <p className="muted">
+            Update the product pricing.
+          </p>
+
+          <div className="form-stack">
+
+            <Field
+              label="Price"
+              name="price"
+              type="number"
+              value={form.price}
+              onChange={handleChange}
+              required
+              disabled={busy}
+              min="0"
+              step="0.01"
+              placeholder="2999"
+            />
+
+            <Field
+              label="Discount Price"
+              name="discountPrice"
+              type="number"
+              value={form.discountPrice}
+              onChange={handleChange}
+              disabled={busy}
+              min="0"
+              step="0.01"
+              placeholder="1499"
+            />
+
+          </div>
+
+        </section>
+
+        {/* ========================================
+            INVENTORY
+        ======================================== */}
+
+        <section className="auth-card">
+
+          <h2>Inventory</h2>
+
+          <p className="muted">
+            Update stock and product review information.
+          </p>
+
+          <div className="form-stack">
+
+            <Field
+              label="Stock"
+              name="stock"
+              type="number"
+              value={form.stock}
+              onChange={handleChange}
+              required
+              disabled={busy}
+              min="0"
+              placeholder="25"
+            />
+
+            <Field
+              label="Rating"
+              name="rating"
+              type="number"
+              value={form.rating}
+              onChange={handleChange}
+              disabled={busy}
+              min="0"
+              max="5"
+              step="0.1"
+              placeholder="4.3"
+            />
+
+            <Field
+              label="Number of Reviews"
+              name="numReviews"
+              type="number"
+              value={form.numReviews}
+              onChange={handleChange}
+              disabled={busy}
+              min="0"
+              placeholder="120"
+            />
+
+          </div>
+
+        </section>
+
+        {/* ========================================
+            BUTTONS
+        ======================================== */}
+
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginTop: "10px",
+            marginBottom: "30px",
+          }}
+        >
+
+          <Button
+            type="submit"
+            busy={busy}
+          >
+            Update Product
+          </Button>
+
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => navigate("/admin/products")}
+          >
+            Cancel
+          </Button>
 
         </div>
-    );
+
+      </form>
+
+    </main>
+  );
 }
