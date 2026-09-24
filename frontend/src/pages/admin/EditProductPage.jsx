@@ -1,493 +1,714 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { adminApi } from "../../services/adminApi";
+import { useNavigate, useParams, Link } from "react-router";
 
-import { adminApi } from "../../services/adminApi.js";
-import { Field } from "../../components/ui/Field.jsx";
-import { Button } from "../../components/ui/Button.jsx";
-import { Alert } from "../../components/ui/Alert.jsx";
+const CATEGORIES = [
+    "Electronics",
+    "Audio",
+    "Computer Accessories",
+    "Books & Reading",
+    "Kitchen",
+    "Kitchen Appliances",
+    "Toys",
+    "Watches",
+    "Fashion",
+    "Clothing",
+    "Bags",
+    "Travel",
+    "Beauty & Personal Care",
+    "Home Appliances",
+];
 
-export function EditProductPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+const LOW_STOCK_LIMIT = 10;
 
-  const [form, setForm] = useState({
+const EMPTY_FORM = {
     name: "",
     description: "",
+    brand: "",
+    category: "",
     price: "",
     discountPrice: "",
     stock: "",
-    category: "",
-    brand: "",
     rating: "",
     numReviews: "",
-  });
+};
 
-  const [currentImage, setCurrentImage] = useState("");
-  const [newImage, setNewImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState("");
+function productToForm(product) {
+    return {
+        name: product.name || "",
+        description: product.description || "",
+        brand: product.brand || "",
+        category: product.category || "",
+        price: product.price ?? "",
+        discountPrice: product.discountPrice ?? "",
+        stock: product.stock ?? "",
+        rating: product.rating ?? "",
+        numReviews: product.numReviews ?? "",
+    };
+}
 
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+function formatMoney(value) {
+    if (value === "" || Number.isNaN(Number(value))) return "—";
+    return `₹${Number(value).toLocaleString("en-IN")}`;
+}
 
-  // ==========================================
-  // LOAD PRODUCT
-  // ==========================================
+function getStockState(stock) {
+    if (stock === "" || Number.isNaN(Number(stock))) {
+        return { label: "Not set", tone: "muted" };
+    }
+    const qty = Number(stock);
+    if (qty <= 0) return { label: "Out of stock", tone: "danger" };
+    if (qty <= LOW_STOCK_LIMIT) return { label: "Low stock", tone: "warning" };
+    return { label: "In stock", tone: "success" };
+}
 
-  useEffect(() => {
-    async function loadProduct() {
-      try {
-        setLoading(true);
-        setError("");
+function validate(form) {
+    const errors = {};
 
-        const product = await adminApi.getProductById(id);
+    if (!form.name.trim()) errors.name = "Product name is required.";
+    if (!form.description.trim()) errors.description = "Description is required.";
+    if (!form.category) errors.category = "Select a category.";
 
-        console.log("EDIT PRODUCT:", product);
+    if (!form.price || Number(form.price) <= 0) {
+        errors.price = "Enter a price greater than 0.";
+    }
 
-        setForm({
-          name: product.name || "",
-          description: product.description || "",
-          price: product.price ?? "",
-          discountPrice: product.discountPrice ?? "",
-          stock: product.stock ?? "",
-          category: product.category || "",
-          brand: product.brand || "",
-          rating: product.rating ?? "",
-          numReviews: product.numReviews ?? "",
-        });
+    if (
+        form.discountPrice !== "" &&
+        Number(form.discountPrice) > Number(form.price)
+    ) {
+        errors.discountPrice = "Selling price can't be higher than the original price.";
+    }
 
-        if (product.images && product.images.length > 0) {
-          setCurrentImage(product.images[0]);
+    if (form.stock === "" || Number(form.stock) < 0) {
+        errors.stock = "Enter a stock quantity of 0 or more.";
+    }
+
+    if (
+        form.rating !== "" &&
+        (Number(form.rating) < 0 || Number(form.rating) > 5)
+    ) {
+        errors.rating = "Rating must be between 0 and 5.";
+    }
+
+    return errors;
+}
+
+export function EditProductPage() {
+    const navigate = useNavigate();
+    const { id } = useParams();
+
+    const [form, setForm] = useState(EMPTY_FORM);
+    const [initialForm, setInitialForm] = useState(EMPTY_FORM);
+
+    const [image, setImage] = useState(null);
+    const [originalImage, setOriginalImage] = useState("");
+    const [preview, setPreview] = useState("");
+
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [loadError, setLoadError] = useState("");
+    const [error, setError] = useState("");
+    const [showErrors, setShowErrors] = useState(false);
+
+    // -----------------------------
+    // Load product
+    // -----------------------------
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadProduct() {
+            try {
+                setLoading(true);
+                setLoadError("");
+
+                const response = await adminApi.getProductById(id);
+
+                const product =
+                    response?.data?.product ||
+                    response?.product ||
+                    response?.data ||
+                    response;
+
+                if (!product) throw new Error("Product not found.");
+                if (cancelled) return;
+
+                const loaded = productToForm(product);
+                setForm(loaded);
+                setInitialForm(loaded);
+
+                const firstImage = product.images?.[0] || "";
+                setOriginalImage(firstImage);
+                setPreview(firstImage);
+            } catch (err) {
+                if (!cancelled) {
+                    setLoadError(err.message || "Failed to load product.");
+                }
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
         }
-      } catch (err) {
-        console.error("LOAD PRODUCT ERROR:", err);
-        setError(err.message || "Failed to load product.");
-      } finally {
-        setLoading(false);
-      }
-    }
 
-    if (id) {
-      loadProduct();
-    }
-  }, [id]);
+        if (id) loadProduct();
 
-  // ==========================================
-  // INPUT CHANGE
-  // ==========================================
+        return () => {
+            cancelled = true;
+        };
+    }, [id]);
 
-  function handleChange(event) {
-    const { name, value } = event.target;
+    // Free the temporary blob URL when the preview changes / page closes
+    useEffect(() => {
+        return () => {
+            if (preview && preview.startsWith("blob:")) {
+                URL.revokeObjectURL(preview);
+            }
+        };
+    }, [preview]);
 
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    // -----------------------------
+    // Derived, live values
+    // -----------------------------
+    const errors = useMemo(() => validate(form), [form]);
 
-    setError("");
-    setSuccess("");
-  }
-
-  // ==========================================
-  // IMAGE CHANGE
-  // ==========================================
-
-  function handleImageChange(event) {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
-    setNewImage(file);
-
-    // Preview new image
-    const imageUrl = URL.createObjectURL(file);
-    setPreviewImage(imageUrl);
-
-    setError("");
-    setSuccess("");
-  }
-
-  // ==========================================
-  // SUBMIT
-  // ==========================================
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-
-    setBusy(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const formData = new FormData();
-
-      formData.append("name", form.name);
-      formData.append("description", form.description);
-      formData.append("price", form.price);
-      formData.append("discountPrice", form.discountPrice);
-      formData.append("stock", form.stock);
-      formData.append("category", form.category);
-      formData.append("brand", form.brand);
-      formData.append("rating", form.rating);
-      formData.append("numReviews", form.numReviews);
-
-      // Backend currently requires image
-      if (newImage) {
-        formData.append("image", newImage);
-      }
-
-      console.log("UPDATING ID:", id);
-
-      const result = await adminApi.updateProduct(id, formData);
-
-      console.log("UPDATE RESULT:", result);
-
-      setSuccess("Product updated successfully!");
-
-      setTimeout(() => {
-        navigate("/admin/products");
-      }, 1000);
-    } catch (err) {
-      console.error("UPDATE ERROR:", err);
-      setError(err.message || "Failed to update product.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // ==========================================
-  // LOADING UI
-  // ==========================================
-
-  if (loading) {
-    return (
-      <main className="page">
-        <section className="auth-card">
-          <h1>Edit Product</h1>
-          <p className="muted">Loading product...</p>
-        </section>
-      </main>
+    const isDirty = useMemo(
+        () => image !== null || JSON.stringify(form) !== JSON.stringify(initialForm),
+        [form, initialForm, image]
     );
-  }
 
-  // ==========================================
-  // UI
-  // ==========================================
+    // Warn before closing the tab with unsaved edits
+    useEffect(() => {
+        if (!isDirty) return;
 
-  return (
-    <main className="page">
+        function warn(e) {
+            e.preventDefault();
+            e.returnValue = "";
+        }
 
-      {/* ================= HEADER ================= */}
+        window.addEventListener("beforeunload", warn);
+        return () => window.removeEventListener("beforeunload", warn);
+    }, [isDirty]);
 
-      <div className="page-header">
-        <div>
-          <h1>Edit Product</h1>
-          <p className="muted">
-            Update your product information.
-          </p>
-        </div>
+    const price = Number(form.price) || 0;
+    const sellingPrice =
+        form.discountPrice !== "" ? Number(form.discountPrice) : price;
+    const discountPercent =
+        price > 0 && sellingPrice < price
+            ? Math.round((1 - sellingPrice / price) * 100)
+            : 0;
+    const stockState = getStockState(form.stock);
 
-        <Button
-          type="button"
-          onClick={() => navigate("/admin/products")}
-        >
-          Back to Products
-        </Button>
-      </div>
+    const categoryOptions =
+        form.category && !CATEGORIES.includes(form.category)
+            ? [form.category, ...CATEGORIES]
+            : CATEGORIES;
 
-      {/* ================= ALERTS ================= */}
+    // -----------------------------
+    // Handlers
+    // -----------------------------
+    function handleChange(e) {
+        const { name, value } = e.target;
+        setForm((current) => ({ ...current, [name]: value }));
+    }
 
-      {error && (
-        <Alert>
-          {error}
-        </Alert>
-      )}
+    function handleImageChange(e) {
+        const file = e.target.files?.[0];
+        e.target.value = "";
 
-      {success && (
-        <Alert tone="success">
-          {success}
-        </Alert>
-      )}
+        if (!file) return;
 
-      {/* ================= FORM ================= */}
+        if (!file.type.startsWith("image/")) {
+            setError("Please select an image file (JPG, PNG or WEBP).");
+            return;
+        }
 
-      <form
-        className="form-stack"
-        onSubmit={handleSubmit}
-        encType="multipart/form-data"
-      >
+        if (file.size > 5 * 1024 * 1024) {
+            setError("Image must be smaller than 5 MB.");
+            return;
+        }
 
-        {/* ========================================
-            IMAGE SECTION
-        ======================================== */}
+        setError("");
+        setImage(file);
+        setPreview(URL.createObjectURL(file));
+    }
 
-        <section className="auth-card">
+    function handleRevertImage() {
+        setImage(null);
+        setPreview(originalImage);
+    }
 
-          <h2>Product Image</h2>
+    function handleDiscard() {
+        setForm(initialForm);
+        setImage(null);
+        setPreview(originalImage);
+        setShowErrors(false);
+        setError("");
+    }
 
-          <p className="muted">
-            Update the main image of your product.
-          </p>
+    async function handleSubmit(e) {
+        e.preventDefault();
 
-          {/* Current / Preview Image */}
+        setShowErrors(true);
 
-          <div
-            style={{
-              marginTop: "20px",
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            {(previewImage || currentImage) && (
-              <img
-                src={previewImage || currentImage}
-                alt={form.name}
-                style={{
-                  width: "260px",
-                  height: "260px",
-                  objectFit: "contain",
-                  borderRadius: "12px",
-                  border: "1px solid #ddd",
-                  background: "#fff",
-                  padding: "10px",
-                }}
-              />
-            )}
-          </div>
+        if (Object.keys(errors).length > 0) {
+            setError("Please fix the highlighted fields.");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+        }
 
-          {/* File input */}
+        try {
+            setSaving(true);
+            setError("");
 
-          <div
-            className="field"
-            style={{ marginTop: "20px" }}
-          >
-            <label htmlFor="image">
-              Product image
-            </label>
+            const formData = new FormData();
 
-            <input
-              id="image"
-              type="file"
-              name="image"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleImageChange}
-              disabled={busy}
-            />
+            formData.append("name", form.name.trim());
+            formData.append("description", form.description.trim());
+            formData.append("brand", form.brand.trim());
+            formData.append("category", form.category);
+            formData.append("price", form.price);
+            formData.append("discountPrice", form.discountPrice || form.price);
+            formData.append("stock", form.stock);
+            formData.append("rating", form.rating || "0");
+            formData.append("numReviews", form.numReviews || "0");
 
-            <p className="muted">
-              {newImage
-                ? `Selected: ${newImage.name}`
-                : "Choose a new image to replace the current image."}
-            </p>
+            // Only send an image if the admin picked a new one
+            if (image) {
+                formData.append("images", image);
+            }
 
-            <p className="muted">
-              JPG, PNG or WEBP
-            </p>
+            await adminApi.updateProduct(id, formData);
 
-            <p className="muted">
-              Maximum size: 5 MB
-            </p>
-          </div>
+            navigate("/admin/products");
+        } catch (err) {
+            console.error("Update product error:", err);
+            setError(err.message || "Failed to update product.");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } finally {
+            setSaving(false);
+        }
+    }
 
-        </section>
+    const fieldError = (name) => (showErrors ? errors[name] : "");
 
-        {/* ========================================
-            BASIC INFORMATION
-        ======================================== */}
+    // -----------------------------
+    // Loading skeleton
+    // -----------------------------
+    if (loading) {
+        return (
+            <div className="admin-add-product">
+                <div className="ep-skeleton ep-skeleton-title" />
+                <div className="add-product-layout">
+                    <div className="add-product-main">
+                        <div className="ep-skeleton ep-skeleton-card" />
+                        <div className="ep-skeleton ep-skeleton-card" />
+                    </div>
+                    <div className="add-product-sidebar">
+                        <div className="ep-skeleton ep-skeleton-card tall" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-        <section className="auth-card">
+    // -----------------------------
+    // Load error
+    // -----------------------------
+    if (loadError) {
+        return (
+            <div className="admin-add-product">
+                <div className="ep-state-card">
+                    <div className="ep-state-icon">!</div>
+                    <h2>Couldn't load this product</h2>
+                    <p>{loadError}</p>
+                    <div className="ep-state-actions">
+                        <button
+                            type="button"
+                            className="primary-btn"
+                            onClick={() => window.location.reload()}
+                        >
+                            Try again
+                        </button>
+                        <Link to="/admin/products" className="secondary-btn ep-link-btn">
+                            Back to products
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-          <h2>Basic Information</h2>
+    return (
+        <div className="admin-add-product">
+            {/* ---------- Header ---------- */}
+            <div className="add-product-header">
+                <div>
+                    <div className="admin-breadcrumb">
+                        Admin / Products / Edit
+                    </div>
 
-          <p className="muted">
-            Update the main details of your product.
-          </p>
+                    <div className="ep-title-row">
+                        <h1>Edit product</h1>
+                        <span className={`ep-badge ep-badge--${stockState.tone}`}>
+                            <i /> {stockState.label}
+                        </span>
+                    </div>
 
-          <div className="form-stack">
+                    <p>
+                        Product ID <code className="ep-code">{id}</code>
+                    </p>
+                </div>
 
-            <Field
-              label="Product Name"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              disabled={busy}
-              placeholder="Enter product name"
-            />
+                <div className="product-actions ep-header-actions">
+                    <Link to="/admin/products" className="secondary-btn ep-link-btn">
+                        Cancel
+                    </Link>
 
-            <div className="field">
-
-              <label htmlFor="description">
-                Description
-              </label>
-
-              <textarea
-                id="description"
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                required
-                disabled={busy}
-                rows={5}
-                placeholder="Enter product description"
-              />
-
+                    <button
+                        type="submit"
+                        form="edit-product-form"
+                        className="primary-btn"
+                        disabled={saving || !isDirty}
+                    >
+                        {saving ? "Saving…" : "Save changes"}
+                    </button>
+                </div>
             </div>
 
-            <Field
-              label="Brand"
-              name="brand"
-              value={form.brand}
-              onChange={handleChange}
-              required
-              disabled={busy}
-              placeholder="Example: Philips"
-            />
+            {error && (
+                <div className="form-error" role="alert">
+                    {error}
+                </div>
+            )}
 
-            <Field
-              label="Category"
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-              required
-              disabled={busy}
-              placeholder="Example: Electronics"
-            />
+            <form
+                id="edit-product-form"
+                className="add-product-layout"
+                onSubmit={handleSubmit}
+                noValidate
+            >
+                {/* ================= MAIN ================= */}
+                <div className="add-product-main">
+                    {/* Basic info */}
+                    <section className="product-form-card">
+                        <div className="card-heading">
+                            <h2>Basic information</h2>
+                            <p>The name, brand and description customers see.</p>
+                        </div>
 
-          </div>
+                        <div className="form-grid">
+                            <div className={`form-field full ${fieldError("name") ? "has-error" : ""}`}>
+                                <label htmlFor="name">
+                                    Product name <span>*</span>
+                                </label>
+                                <input
+                                    id="name"
+                                    name="name"
+                                    value={form.name}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Apple AirPods 4"
+                                />
+                                {fieldError("name") && (
+                                    <small className="ep-field-error">{fieldError("name")}</small>
+                                )}
+                            </div>
 
-        </section>
+                            <div className="form-field">
+                                <label htmlFor="brand">Brand</label>
+                                <input
+                                    id="brand"
+                                    name="brand"
+                                    value={form.brand}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Apple"
+                                />
+                            </div>
 
-        {/* ========================================
-            PRICING
-        ======================================== */}
+                            <div className={`form-field ${fieldError("category") ? "has-error" : ""}`}>
+                                <label htmlFor="category">
+                                    Category <span>*</span>
+                                </label>
+                                <select
+                                    id="category"
+                                    name="category"
+                                    value={form.category}
+                                    onChange={handleChange}
+                                >
+                                    <option value="">Select category</option>
+                                    {categoryOptions.map((category) => (
+                                        <option key={category} value={category}>
+                                            {category}
+                                        </option>
+                                    ))}
+                                </select>
+                                {fieldError("category") && (
+                                    <small className="ep-field-error">{fieldError("category")}</small>
+                                )}
+                            </div>
 
-        <section className="auth-card">
+                            <div className={`form-field full ${fieldError("description") ? "has-error" : ""}`}>
+                                <label htmlFor="description">
+                                    Description <span>*</span>
+                                </label>
+                                <textarea
+                                    id="description"
+                                    name="description"
+                                    value={form.description}
+                                    onChange={handleChange}
+                                    rows="6"
+                                    placeholder="Describe the product…"
+                                />
+                                <div className="ep-field-footer">
+                                    {fieldError("description") ? (
+                                        <small className="ep-field-error">{fieldError("description")}</small>
+                                    ) : (
+                                        <span />
+                                    )}
+                                    <small className="ep-counter">
+                                        {form.description.length} characters
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-          <h2>Pricing</h2>
+                    {/* Pricing */}
+                    <section className="product-form-card">
+                        <div className="card-heading">
+                            <h2>Pricing</h2>
+                            <p>Set the original price and the price customers pay.</p>
+                        </div>
 
-          <p className="muted">
-            Update the product pricing.
-          </p>
+                        <div className="form-grid">
+                            <div className={`form-field ${fieldError("price") ? "has-error" : ""}`}>
+                                <label htmlFor="price">
+                                    Original price <span>*</span>
+                                </label>
+                                <div className="input-with-symbol">
+                                    <span>₹</span>
+                                    <input
+                                        id="price"
+                                        name="price"
+                                        type="number"
+                                        min="0"
+                                        value={form.price}
+                                        onChange={handleChange}
+                                        placeholder="0"
+                                    />
+                                </div>
+                                {fieldError("price") && (
+                                    <small className="ep-field-error">{fieldError("price")}</small>
+                                )}
+                            </div>
 
-          <div className="form-stack">
+                            <div className={`form-field ${fieldError("discountPrice") ? "has-error" : ""}`}>
+                                <label htmlFor="discountPrice">Selling price</label>
+                                <div className="input-with-symbol">
+                                    <span>₹</span>
+                                    <input
+                                        id="discountPrice"
+                                        name="discountPrice"
+                                        type="number"
+                                        min="0"
+                                        value={form.discountPrice}
+                                        onChange={handleChange}
+                                        placeholder="Same as original"
+                                    />
+                                </div>
+                                {fieldError("discountPrice") ? (
+                                    <small className="ep-field-error">{fieldError("discountPrice")}</small>
+                                ) : discountPercent > 0 ? (
+                                    <small className="ep-hint ep-hint--success">
+                                        Customers save {discountPercent}% ({formatMoney(price - sellingPrice)})
+                                    </small>
+                                ) : (
+                                    <small className="ep-hint">Leave empty to sell at the original price.</small>
+                                )}
+                            </div>
+                        </div>
+                    </section>
 
-            <Field
-              label="Price"
-              name="price"
-              type="number"
-              value={form.price}
-              onChange={handleChange}
-              required
-              disabled={busy}
-              min="0"
-              step="0.01"
-              placeholder="2999"
-            />
+                    {/* Inventory */}
+                    <section className="product-form-card">
+                        <div className="card-heading">
+                            <h2>Inventory &amp; ratings</h2>
+                            <p>Stock levels update the badge at the top of this page.</p>
+                        </div>
 
-            <Field
-              label="Discount Price"
-              name="discountPrice"
-              type="number"
-              value={form.discountPrice}
-              onChange={handleChange}
-              disabled={busy}
-              min="0"
-              step="0.01"
-              placeholder="1499"
-            />
+                        <div className="form-grid three">
+                            <div className={`form-field ${fieldError("stock") ? "has-error" : ""}`}>
+                                <label htmlFor="stock">
+                                    Stock <span>*</span>
+                                </label>
+                                <input
+                                    id="stock"
+                                    name="stock"
+                                    type="number"
+                                    min="0"
+                                    value={form.stock}
+                                    onChange={handleChange}
+                                    placeholder="0"
+                                />
+                                {fieldError("stock") && (
+                                    <small className="ep-field-error">{fieldError("stock")}</small>
+                                )}
+                            </div>
 
-          </div>
+                            <div className={`form-field ${fieldError("rating") ? "has-error" : ""}`}>
+                                <label htmlFor="rating">Rating (0–5)</label>
+                                <input
+                                    id="rating"
+                                    name="rating"
+                                    type="number"
+                                    min="0"
+                                    max="5"
+                                    step="0.1"
+                                    value={form.rating}
+                                    onChange={handleChange}
+                                    placeholder="0.0"
+                                />
+                                {fieldError("rating") && (
+                                    <small className="ep-field-error">{fieldError("rating")}</small>
+                                )}
+                            </div>
 
-        </section>
+                            <div className="form-field">
+                                <label htmlFor="numReviews">Number of reviews</label>
+                                <input
+                                    id="numReviews"
+                                    name="numReviews"
+                                    type="number"
+                                    min="0"
+                                    value={form.numReviews}
+                                    onChange={handleChange}
+                                    placeholder="0"
+                                />
+                            </div>
+                        </div>
+                    </section>
+                </div>
 
-        {/* ========================================
-            INVENTORY
-        ======================================== */}
+                {/* ================= SIDEBAR ================= */}
+                <aside className="add-product-sidebar">
+                    {/* Image */}
+                    <section className="product-form-card image-card">
+                        <div className="card-heading">
+                            <h2>Product image</h2>
+                            <p>JPG, PNG or WEBP · max 5 MB</p>
+                        </div>
 
-        <section className="auth-card">
+                        <label htmlFor="product-image" className="image-upload">
+                            {preview ? (
+                                <div className="image-preview">
+                                    <img src={preview} alt="Product preview" />
+                                    <div className="change-image">Click to replace image</div>
+                                </div>
+                            ) : (
+                                <div className="upload-placeholder">
+                                    <div className="upload-icon">+</div>
+                                    <strong>Upload an image</strong>
+                                    <span>Click to browse your files</span>
+                                    <small>JPG, PNG or WEBP</small>
+                                </div>
+                            )}
 
-          <h2>Inventory</h2>
+                            <input
+                                id="product-image"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                hidden
+                            />
+                        </label>
 
-          <p className="muted">
-            Update stock and product review information.
-          </p>
+                        {image && (
+                            <div className="ep-image-note">
+                                <span title={image.name}>New: {image.name}</span>
+                                <button type="button" onClick={handleRevertImage}>
+                                    Undo
+                                </button>
+                            </div>
+                        )}
+                    </section>
 
-          <div className="form-stack">
+                    {/* Live summary */}
+                    <section className="product-form-card">
+                        <div className="card-heading">
+                            <h2>Live summary</h2>
+                            <p>How this product will look in the store.</p>
+                        </div>
 
-            <Field
-              label="Stock"
-              name="stock"
-              type="number"
-              value={form.stock}
-              onChange={handleChange}
-              required
-              disabled={busy}
-              min="0"
-              placeholder="25"
-            />
+                        <div className="product-summary">
+                            <div>
+                                <span>Name</span>
+                                <strong title={form.name}>{form.name || "—"}</strong>
+                            </div>
+                            <div>
+                                <span>Category</span>
+                                <strong>{form.category || "—"}</strong>
+                            </div>
+                            <div>
+                                <span>Price</span>
+                                <strong className="ep-price">
+                                    {formatMoney(sellingPrice || "")}
+                                    {discountPercent > 0 && (
+                                        <s>{formatMoney(price)}</s>
+                                    )}
+                                </strong>
+                            </div>
+                            {discountPercent > 0 && (
+                                <div>
+                                    <span>Discount</span>
+                                    <strong className="ep-green">{discountPercent}% off</strong>
+                                </div>
+                            )}
+                            <div>
+                                <span>Stock</span>
+                                <strong>
+                                    {form.stock === "" ? "—" : form.stock} · {stockState.label}
+                                </strong>
+                            </div>
+                            <div>
+                                <span>Rating</span>
+                                <strong>
+                                    {form.rating === "" ? "—" : `★ ${Number(form.rating).toFixed(1)}`}
+                                    {form.numReviews !== "" && ` (${form.numReviews})`}
+                                </strong>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+            </form>
 
-            <Field
-              label="Rating"
-              name="rating"
-              type="number"
-              value={form.rating}
-              onChange={handleChange}
-              disabled={busy}
-              min="0"
-              max="5"
-              step="0.1"
-              placeholder="4.3"
-            />
+            {/* ---------- Unsaved changes bar ---------- */}
+            {isDirty && (
+                <div className="ep-savebar" role="status">
+                    <div className="ep-savebar-inner">
+                        <span className="ep-savebar-text">
+                            <i /> You have unsaved changes
+                        </span>
 
-            <Field
-              label="Number of Reviews"
-              name="numReviews"
-              type="number"
-              value={form.numReviews}
-              onChange={handleChange}
-              disabled={busy}
-              min="0"
-              placeholder="120"
-            />
+                        <div className="ep-savebar-actions">
+                            <button
+                                type="button"
+                                className="secondary-btn"
+                                onClick={handleDiscard}
+                                disabled={saving}
+                            >
+                                Discard
+                            </button>
 
-          </div>
-
-        </section>
-
-        {/* ========================================
-            BUTTONS
-        ======================================== */}
-
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            marginTop: "10px",
-            marginBottom: "30px",
-          }}
-        >
-
-          <Button
-            type="submit"
-            busy={busy}
-          >
-            Update Product
-          </Button>
-
-          <Button
-            type="button"
-            disabled={busy}
-            onClick={() => navigate("/admin/products")}
-          >
-            Cancel
-          </Button>
-
+                            <button
+                                type="submit"
+                                form="edit-product-form"
+                                className="primary-btn"
+                                disabled={saving}
+                            >
+                                {saving ? "Saving…" : "Save changes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-
-      </form>
-
-    </main>
-  );
+    );
 }

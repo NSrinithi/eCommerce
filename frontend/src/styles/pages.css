@@ -4338,3 +4338,343 @@
         grid-column: auto;
     }
 }
+
+/* =========================================================
+   EDIT PRODUCT PAGE
+   Paste at the END of your CSS file. It reuses the existing
+   Add Product classes (.admin-add-product, .product-form-card,
+   .form-field, .image-upload, .product-summary, .primary-btn...)
+   and only adds what the edit page needs.
+   ========================================================= */
+ 
+/* ---------- Header ---------- */
+ 
+.ep-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+ 
+.ep-code {
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #f1f3f7;
+    color: #475467;
+    font-size: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+ 
+.ep-header-actions {
+    flex: 0 0 auto;
+}
+ 
+.ep-header-actions .primary-btn {
+    flex: 0 0 auto;
+    min-width: 132px;
+}
+ 
+.ep-link-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+ 
+/* ---------- Status badge ---------- */
+ 
+.ep-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 650;
+    transition: background 0.2s, color 0.2s;
+}
+ 
+.ep-badge i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+ 
+.ep-badge--success { background: #ecf9f2; color: #19734a; }
+.ep-badge--warning { background: #fff8e6; color: #986c09; }
+.ep-badge--danger  { background: #fff0f0; color: #bd3d3d; }
+.ep-badge--muted   { background: #f2f4f7; color: #667085; }
+ 
+/* ---------- Field feedback ---------- */
+ 
+.form-field.has-error input,
+.form-field.has-error select,
+.form-field.has-error textarea,
+.form-field.has-error .input-with-symbol {
+    border-color: #e5484d;
+}
+ 
+.form-field.has-error input:focus,
+.form-field.has-error select:focus,
+.form-field.has-error textarea:focus,
+.form-field.has-error .input-with-symbol:focus-within {
+    box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.12);
+}
+ 
+.ep-field-error {
+    color: #b42318;
+    font-size: 12px;
+}
+ 
+.ep-hint {
+    color: #7b8494;
+    font-size: 12px;
+}
+ 
+.ep-hint--success {
+    color: #19734a;
+    font-weight: 600;
+}
+ 
+.ep-field-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+ 
+.ep-counter {
+    color: #98a2b3;
+    font-size: 12px;
+}
+ 
+/* ---------- Image extras ---------- */
+ 
+.ep-image-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: -6px 20px 0;
+    padding: 9px 12px;
+    border-radius: 9px;
+    background: #f5f6ff;
+    color: #3730a3;
+    font-size: 12px;
+}
+ 
+.ep-image-note span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+ 
+.ep-image-note button {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: #4f46e5;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+ 
+.ep-image-note button:hover {
+    text-decoration: underline;
+}
+ 
+/* ---------- Live summary ---------- */
+ 
+.ep-price s {
+    margin-left: 8px;
+    color: #a2a8b3;
+    font-weight: 400;
+}
+ 
+.ep-green {
+    color: #19734a !important;
+}
+ 
+/* ---------- Unsaved changes bar ---------- */
+ 
+.ep-savebar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: 0 20px 20px;
+    pointer-events: none;
+    animation: ep-rise 0.22s ease-out;
+}
+ 
+.ep-savebar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 12px 14px 12px 20px;
+    border-radius: 12px;
+    background: #111827;
+    color: #fff;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+    pointer-events: auto;
+}
+ 
+.ep-savebar-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+ 
+.ep-savebar-text i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f5b83d;
+}
+ 
+.ep-savebar-actions {
+    display: flex;
+    gap: 10px;
+}
+ 
+.ep-savebar-actions .primary-btn,
+.ep-savebar-actions .secondary-btn {
+    flex: 0 0 auto;
+    padding: 9px 16px;
+}
+ 
+.ep-savebar-actions .secondary-btn {
+    border-color: #4b5563;
+    background: transparent;
+    color: #fff;
+}
+ 
+.ep-savebar-actions .secondary-btn:hover {
+    background: #1f2937;
+}
+ 
+@keyframes ep-rise {
+    from { transform: translateY(16px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+ 
+/* leave room so the bar never covers the last card */
+.admin-add-product {
+    padding-bottom: 110px;
+}
+ 
+/* ---------- Loading skeleton ---------- */
+ 
+.ep-skeleton {
+    border-radius: 14px;
+    background: linear-gradient(90deg, #f1f3f7 25%, #e4e8ef 37%, #f1f3f7 63%);
+    background-size: 400% 100%;
+    animation: ep-shimmer 1.4s ease infinite;
+}
+ 
+.ep-skeleton-title {
+    width: 260px;
+    height: 40px;
+    margin-bottom: 28px;
+}
+ 
+.ep-skeleton-card {
+    height: 300px;
+}
+ 
+.ep-skeleton-card.tall {
+    height: 460px;
+}
+ 
+@keyframes ep-shimmer {
+    0%   { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+}
+ 
+/* ---------- Load error ---------- */
+ 
+.ep-state-card {
+    max-width: 480px;
+    margin: 60px auto;
+    padding: 48px 28px;
+    text-align: center;
+    border: 1px solid #e4e8ef;
+    border-radius: 14px;
+    background: #fff;
+}
+ 
+.ep-state-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: #fff1f2;
+    color: #b42318;
+    font-size: 22px;
+    font-weight: 800;
+}
+ 
+.ep-state-card h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    color: #172033;
+}
+ 
+.ep-state-card p {
+    margin: 0 0 22px;
+    color: #687386;
+}
+ 
+.ep-state-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+ 
+.ep-state-actions .primary-btn {
+    flex: 0 0 auto;
+}
+ 
+/* ---------- Responsive ---------- */
+ 
+@media (max-width: 700px) {
+    .ep-header-actions {
+        width: 100%;
+    }
+ 
+    .ep-header-actions .primary-btn,
+    .ep-header-actions .secondary-btn {
+        flex: 1;
+    }
+ 
+    .ep-savebar {
+        padding: 0 12px 12px;
+    }
+ 
+    .ep-savebar-inner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 14px;
+    }
+ 
+    .ep-savebar-actions .primary-btn,
+    .ep-savebar-actions .secondary-btn {
+        flex: 1;
+    }
+}
+ 
+@media (prefers-reduced-motion: reduce) {
+    .ep-savebar,
+    .ep-skeleton {
+        animation: none;
+    }
+}
