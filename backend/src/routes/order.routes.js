@@ -7,5 +7,5 @@ router.post("/",requireAuth,createOrder);
 router.get("/",requireAuth,getOrders);
 router.get("/all",requireAuth,getAllOrders);
 router.get("/:orderId",requireAuth,getOrdersById);
-router.updateStatus("/:id/status",requireAuth,updateOrderStatus);
+router.patch("/:id/status",requireAuth,updateOrderStatus);
 export default router;
