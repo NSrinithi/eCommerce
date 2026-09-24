@@ -1,4 +1,3 @@
-import { getProductById } from "../../../backend/src/services/product.service";
 import { api } from "../lib/api";
 
 export const adminApi = {
