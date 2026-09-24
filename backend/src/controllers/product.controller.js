@@ -26,7 +26,7 @@ export async function getProducts(req, res) {
 
 export async function addProduct(req, res) {
     try {
-        console.log("request:"+req);
+        console.log("request:" + req);
         if (!req.file) {
             return res.status(400).json({
                 success: false,
@@ -88,19 +88,27 @@ export async function deleteProductById(req, res) {
 
 export async function updateProductById(req, res) {
     try {
-        if (!req.file) {
-            return res.status(400).json({
+        const productData = {
+            ...req.body
+        };
+
+        // Only update image if a new image was uploaded
+        if (req.file) {
+            const imageUrl = await uploadImage(req.file.path);
+            productData.images = [imageUrl];
+        }
+
+        const product = await ps.updateProductById(
+            req.params.id,
+            productData
+        );
+
+        if (!product) {
+            return res.status(404).json({
                 success: false,
-                message: "Product image is required"
+                message: "Product not found"
             });
         }
-        const imageUrl = await uploadImage(req.file.path);
-
-        const productData = {
-            ...req.body,
-            images: [imageUrl]
-        };
-        const product = await ps.updateProductById(req.params.id, productData);
         res.status(200).json({
             success: true,
             data: product
@@ -119,7 +127,7 @@ export async function searchProduct(req, res) {
     try {
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 5;
-        const product = await ps.searchProduct(req.query.search, req.query.category, req.query.minPrice, req.query.maxPrice, req.query.sort,page,limit);
+        const product = await ps.searchProduct(req.query.search, req.query.category, req.query.minPrice, req.query.maxPrice, req.query.sort, page, limit);
         res.status(200).json({
             success: true,
             data: product,
