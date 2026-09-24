@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Alert } from '../../components/ui/Alert.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -24,7 +24,16 @@ export function LoginPage() {
     try {
       await login(form);
       const from = location.state?.from;
-      navigate(typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') ? from : '/dashboard', { replace: true });
+      if (typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')) {
+        navigate(from, { replace: true });
+        return;
+      }
+
+      if (user?.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/products', { replace: true });
+      }
     } catch (err) {
       setError(err.message);
     } finally {
