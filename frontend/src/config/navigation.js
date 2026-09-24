@@ -14,6 +14,11 @@ export function getNavigation(role) {
         icon: 'grid',
       },
       {
+        path: '/admin/orders',
+        label: 'Orders',
+        icon: 'grid',
+      },
+      {
         path: '/profile',
         label: 'My profile',
         icon: 'user',
@@ -51,5 +56,6 @@ export const pageTitles = {
   '/orders': 'Orders',
   '/profile': 'My profile',
   '/admin/dashboard': 'Admin Dashboard',
-  '/admin/products':'Admin Products'
+  '/admin/products':'Admin Products',
+  '/admin/orders':'Admin Orders'
 };
