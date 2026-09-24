@@ -38,7 +38,7 @@ export function AppRoutes() {
         <Route path='/admin/dashboard' element={<RequiredRole role="ADMIN"><AdminDashboardPage/></RequiredRole>}/>
         <Route path='/admin/products' element={<RequiredRole role="ADMIN"><AdminProductsPage/></RequiredRole>}/>
         <Route path='/admin/add' element={<RequiredRole role="ADMIN"><AddProductPage/></RequiredRole>}/>
-        <Route path='/admin/edit' element={<RequiredRole role="ADMIN"><EditProductPage/></RequiredRole>}/>
+        <Route path='/admin/edit/:id' element={<RequiredRole role="ADMIN"><EditProductPage/></RequiredRole>}/>
         <Route path='/checkOut' element={<CheckOutPage/>}/>
         <Route path='/cart' element={<CartPage/>}/>
       </Route>
