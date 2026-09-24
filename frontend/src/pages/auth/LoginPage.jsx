@@ -31,7 +31,6 @@ export function LoginPage() {
       console.log('Logged in user:', loggedInUser);
       console.log('Role:', loggedInUser?.role);
       if (loggedInUser?.role === 'ADMIN') {
-        console.log("HIIIIII")
         navigate('/admin/dashboard', { replace: true });
       } else {
         navigate('/products', { replace: true });

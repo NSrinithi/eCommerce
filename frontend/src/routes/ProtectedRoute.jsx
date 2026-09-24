@@ -35,13 +35,20 @@ export function GuestRoute() {
 export function RequiredRole({ role, children }) {
   const { user } = useAuth();
 
+  console.log("RequiredRole user:", user);
+  console.log("RequiredRole required role:", role);
+  console.log("RequiredRole actual role:", user?.role);
+
   if (!user) {
+    console.log("NO USER → LOGIN");
     return <Navigate to="/login" replace />;
   }
 
   if (user.role !== role) {
+    console.log("ROLE MISMATCH → DASHBOARD");
     return <Navigate to="/dashboard" replace />;
   }
 
+  console.log("ROLE MATCH → ADMIN PAGE");
   return children;
 }
