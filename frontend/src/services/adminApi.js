@@ -1,3 +1,4 @@
+import { getProductById } from "../../../backend/src/services/product.service";
 import { api } from "../lib/api";
 
 export const adminApi = {
@@ -17,7 +18,7 @@ export const adminApi = {
             method: "PUT",
             data: formData,
         }),
-
+    getProductById:(id)=>api(`/products/${id}`),
     deleteProduct: (id) =>
         api(`/products/${id}`, {
             method: "DELETE",

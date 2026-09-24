@@ -50,7 +50,7 @@ export function EditProductPage() {
                 setLoading(true);
                 setError("");
 
-                const response = await adminApi.getProduct(id);
+                const response = await adminApi.getProductById(id);
 
                 console.log("Product response:", response);
 
