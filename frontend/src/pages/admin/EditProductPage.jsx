@@ -1,755 +1,389 @@
 import { useEffect, useState } from "react";
-import { adminApi } from "../../services/adminApi";
-import { useNavigate, useParams, Link } from "react-router";
-
-const CATEGORIES = [
-    "Electronics",
-    "Audio",
-    "Computer Accessories",
-    "Books & Reading",
-    "Kitchen",
-    "Kitchen Appliances",
-    "Toys",
-    "Watches",
-    "Fashion",
-    "Clothing",
-    "Bags",
-    "Travel",
-    "Beauty & Personal Care",
-    "Home Appliances",
-];
+import { useNavigate, useParams } from "react-router";
+import { adminApi } from "../../services/adminApi.js";
+import { Field } from "../../components/ui/Field.jsx";
+import { Button } from "../../components/ui/Button.jsx";
+import { Alert } from "../../components/ui/Alert.jsx";
 
 export function EditProductPage() {
-    const navigate = useNavigate();
-    const { id } = useParams();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-    const [form, setForm] = useState({
-        name: "",
-        description: "",
-        brand: "",
-        category: "",
-        price: "",
-        discountPrice: "",
-        stock: "",
-        rating: "",
-        numReviews: "",
-    });
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    discountPrice: "",
+    stock: "",
+    category: "",
+    brand: "",
+    rating: "",
+    numReviews: "",
+  });
 
-    const [image, setImage] = useState(null);
-    const [preview, setPreview] = useState("");
+  const [image, setImage] = useState(null);
+  const [oldImage, setOldImage] = useState("");
 
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-    // ============================
-    // LOAD PRODUCT
-    // ============================
-
-    useEffect(() => {
-        async function loadProduct() {
-            try {
-                setLoading(true);
-                setError("");
-
-                const response = await adminApi.getProductById(id);
-
-                console.log("Product response:", response);
-
-                // Handles different possible API response structures
-                const product =
-                    response?.data?.product ||
-                    response?.product ||
-                    response?.data ||
-                    response;
-
-                if (!product) {
-                    throw new Error("Product not found.");
-                }
-
-                setForm({
-                    name: product.name || "",
-                    description: product.description || "",
-                    brand: product.brand || "",
-                    category: product.category || "",
-                    price: product.price ?? "",
-                    discountPrice: product.discountPrice ?? "",
-                    stock: product.stock ?? "",
-                    rating: product.rating ?? "",
-                    numReviews: product.numReviews ?? "",
-                });
-
-                // Existing image
-                if (product.images?.length > 0) {
-                    setPreview(product.images[0]);
-                }
-            } catch (err) {
-                console.error("Failed to load product:", err);
-
-                setError(
-                    err.message || "Failed to load product."
-                );
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        if (id) {
-            loadProduct();
-        }
-    }, [id]);
-
-    // ============================
-    // INPUT CHANGE
-    // ============================
-
-    function handleChange(event) {
-        const { name, value } = event.target;
-
-        setForm((current) => ({
-            ...current,
-            [name]: value,
-        }));
-    }
-
-    // ============================
-    // IMAGE CHANGE
-    // ============================
-
-    function handleImageChange(event) {
-        const file = event.target.files?.[0];
-
-        if (!file) return;
-
-        if (!file.type.startsWith("image/")) {
-            setError("Please select an image file.");
-            return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-            setError("Image must be smaller than 5 MB.");
-            return;
-        }
-
+  // -----------------------------
+  // LOAD PRODUCT
+  // -----------------------------
+  useEffect(() => {
+    async function loadProduct() {
+      try {
+        setLoading(true);
         setError("");
-        setImage(file);
 
-        // Show new image immediately
-        setPreview(URL.createObjectURL(file));
+        const product = await adminApi.getProductById(id);
+
+        console.log("Product loaded:", product);
+
+        setForm({
+          name: product.name || "",
+          description: product.description || "",
+          price: product.price ?? "",
+          discountPrice: product.discountPrice ?? "",
+          stock: product.stock ?? "",
+          category: product.category || "",
+          brand: product.brand || "",
+          rating: product.rating ?? "",
+          numReviews: product.numReviews ?? "",
+        });
+
+        if (product.images?.length > 0) {
+          setOldImage(product.images[0]);
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err.message || "Failed to load product.");
+      } finally {
+        setLoading(false);
+      }
     }
 
-    // ============================
-    // VALIDATION
-    // ============================
-
-    function validateForm() {
-        if (!form.name.trim()) {
-            return "Product name is required.";
-        }
-
-        if (!form.description.trim()) {
-            return "Product description is required.";
-        }
-
-        if (!form.category) {
-            return "Please select a category.";
-        }
-
-        if (!form.price || Number(form.price) <= 0) {
-            return "Please enter a valid price.";
-        }
-
-        if (
-            form.discountPrice !== "" &&
-            Number(form.discountPrice) > Number(form.price)
-        ) {
-            return "Discount price cannot be greater than the original price.";
-        }
-
-        if (
-            form.stock === "" ||
-            Number(form.stock) < 0
-        ) {
-            return "Please enter a valid stock quantity.";
-        }
-
-        if (
-            form.rating !== "" &&
-            (
-                Number(form.rating) < 0 ||
-                Number(form.rating) > 5
-            )
-        ) {
-            return "Rating must be between 0 and 5.";
-        }
-
-        return "";
+    if (id) {
+      loadProduct();
     }
+  }, [id]);
 
-    // ============================
-    // SUBMIT
-    // ============================
+  // -----------------------------
+  // INPUT CHANGE
+  // -----------------------------
+  function change(event) {
+    const { name, value } = event.target;
 
-    async function handleSubmit(event) {
-        event.preventDefault();
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
 
-        const validationError = validateForm();
+    setError("");
+    setSuccess("");
+  }
 
-        if (validationError) {
-            setError(validationError);
-            return;
-        }
+  // -----------------------------
+  // IMAGE CHANGE
+  // -----------------------------
+  function handleImageChange(event) {
+    const file = event.target.files?.[0];
 
-        try {
-            setSaving(true);
-            setError("");
+    if (!file) return;
 
-            const formData = new FormData();
+    setImage(file);
+    setError("");
+    setSuccess("");
+  }
 
-            formData.append(
-                "name",
-                form.name.trim()
-            );
+  // -----------------------------
+  // SUBMIT
+  // -----------------------------
+  async function submit(event) {
+    event.preventDefault();
 
-            formData.append(
-                "description",
-                form.description.trim()
-            );
+    setBusy(true);
+    setError("");
+    setSuccess("");
 
-            formData.append(
-                "brand",
-                form.brand.trim()
-            );
+    try {
+      const formData = new FormData();
 
-            formData.append(
-                "category",
-                form.category
-            );
+      formData.append("name", form.name);
+      formData.append("description", form.description);
+      formData.append("price", form.price);
+      formData.append("discountPrice", form.discountPrice);
+      formData.append("stock", form.stock);
+      formData.append("category", form.category);
+      formData.append("brand", form.brand);
+      formData.append("rating", form.rating);
+      formData.append("numReviews", form.numReviews);
 
-            formData.append(
-                "price",
-                form.price
-            );
+      // Backend currently requires an image
+      if (image) {
+        formData.append("image", image);
+      }
 
-            formData.append(
-                "discountPrice",
-                form.discountPrice || form.price
-            );
+      console.log("Updating product:", id);
 
-            formData.append(
-                "stock",
-                form.stock
-            );
+      const updatedProduct = await adminApi.updateProduct(
+        id,
+        formData
+      );
 
-            formData.append(
-                "rating",
-                form.rating || "0"
-            );
+      console.log("Updated product:", updatedProduct);
 
-            formData.append(
-                "numReviews",
-                form.numReviews || "0"
-            );
+      setSuccess("Product updated successfully.");
 
-            // IMPORTANT:
-            // Only send an image if a new image was selected.
-            if (image) {
-                formData.append("images", image);
-            }
-
-            console.log("Updating product:", id);
-
-            await adminApi.updateProduct(id, formData);
-
-            // Go back to admin products
-            navigate("/admin/products");
-        } catch (err) {
-            console.error("Update product error:", err);
-
-            setError(
-                err.message ||
-                "Failed to update product."
-            );
-        } finally {
-            setSaving(false);
-        }
+      setTimeout(() => {
+        navigate("/admin/products");
+      }, 800);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Failed to update product.");
+    } finally {
+      setBusy(false);
     }
+  }
 
-    // ============================
-    // LOADING
-    // ============================
-
-    if (loading) {
-        return (
-            <div className="admin-page">
-                <p>Loading product...</p>
-            </div>
-        );
-    }
-
-    // ============================
-    // ERROR WHILE LOADING
-    // ============================
-
-    if (error && !form.name) {
-        return (
-            <div className="admin-page">
-
-                <div className="admin-form-error">
-                    {error}
-                </div>
-
-                <Link
-                    to="/admin/products"
-                    className="admin-secondary-button"
-                >
-                    ← Back to Products
-                </Link>
-
-            </div>
-        );
-    }
-
-    // ============================
-    // PAGE
-    // ============================
-
+  // -----------------------------
+  // LOADING
+  // -----------------------------
+  if (loading) {
     return (
-        <div className="admin-page">
-
-            {/* ================= HEADER ================= */}
-
-            <div className="admin-page-header">
-
-                <div>
-
-                    <p className="admin-eyebrow">
-                        CATALOG
-                    </p>
-
-                    <h1>
-                        Edit Product
-                    </h1>
-
-                    <p>
-                        Update the details of your product.
-                    </p>
-
-                </div>
-
-                <Link
-                    to="/admin/products"
-                    className="admin-secondary-button"
-                >
-                    ← Back to Products
-                </Link>
-
-            </div>
-
-
-            {/* ================= ERROR ================= */}
-
-            {error && (
-                <div className="admin-form-error">
-                    {error}
-                </div>
-            )}
-
-
-            {/* ================= FORM ================= */}
-
-            <form
-                className="admin-product-form"
-                onSubmit={handleSubmit}
-            >
-
-                {/* ================================================= */}
-                {/* PRODUCT IMAGE */}
-                {/* ================================================= */}
-
-                <section className="admin-form-card">
-
-                    <div className="admin-form-card-header">
-
-                        <div>
-
-                            <h2>
-                                Product Image
-                            </h2>
-
-                            <p>
-                                Change the product image if needed.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div className="admin-image-upload">
-
-                        <div className="admin-image-preview">
-
-                            {preview ? (
-
-                                <img
-                                    src={preview}
-                                    alt="Product preview"
-                                />
-
-                            ) : (
-
-                                <div className="admin-image-placeholder">
-
-                                    <span>
-                                        ＋
-                                    </span>
-
-                                    <p>
-                                        No image selected
-                                    </p>
-
-                                </div>
-
-                            )}
-
-                        </div>
-
-
-                        <div className="admin-image-upload-info">
-
-                            <label
-                                htmlFor="product-image"
-                                className="admin-upload-button"
-                            >
-                                Choose New Image
-                            </label>
-
-                            <input
-                                id="product-image"
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                hidden
-                            />
-
-                            <p>
-                                JPG, PNG or WEBP
-                            </p>
-
-                            <p>
-                                Maximum size: 5 MB
-                            </p>
-
-                            {image && (
-                                <strong>
-                                    {image.name}
-                                </strong>
-                            )}
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-
-                {/* ================================================= */}
-                {/* BASIC INFORMATION */}
-                {/* ================================================= */}
-
-                <section className="admin-form-card">
-
-                    <div className="admin-form-card-header">
-
-                        <div>
-
-                            <h2>
-                                Basic Information
-                            </h2>
-
-                            <p>
-                                Update the main details of your product.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div className="admin-form-grid">
-
-                        {/* PRODUCT NAME */}
-
-                        <div className="admin-form-field full">
-
-                            <label htmlFor="name">
-                                Product Name *
-                            </label>
-
-                            <input
-                                id="name"
-                                name="name"
-                                value={form.name}
-                                onChange={handleChange}
-                                placeholder="e.g. Apple AirPods 4"
-                            />
-
-                        </div>
-
-
-                        {/* BRAND */}
-
-                        <div className="admin-form-field">
-
-                            <label htmlFor="brand">
-                                Brand
-                            </label>
-
-                            <input
-                                id="brand"
-                                name="brand"
-                                value={form.brand}
-                                onChange={handleChange}
-                                placeholder="e.g. Apple"
-                            />
-
-                        </div>
-
-
-                        {/* CATEGORY */}
-
-                        <div className="admin-form-field">
-
-                            <label htmlFor="category">
-                                Category *
-                            </label>
-
-                            <select
-                                id="category"
-                                name="category"
-                                value={form.category}
-                                onChange={handleChange}
-                            >
-
-                                <option value="">
-                                    Select category
-                                </option>
-
-                                {CATEGORIES.map((category) => (
-
-                                    <option
-                                        key={category}
-                                        value={category}
-                                    >
-                                        {category}
-                                    </option>
-
-                                ))}
-
-                            </select>
-
-                        </div>
-
-
-                        {/* DESCRIPTION */}
-
-                        <div className="admin-form-field full">
-
-                            <label htmlFor="description">
-                                Description *
-                            </label>
-
-                            <textarea
-                                id="description"
-                                name="description"
-                                value={form.description}
-                                onChange={handleChange}
-                                rows="5"
-                                placeholder="Describe the product..."
-                            />
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-
-                {/* ================================================= */}
-                {/* PRICING & INVENTORY */}
-                {/* ================================================= */}
-
-                <section className="admin-form-card">
-
-                    <div className="admin-form-card-header">
-
-                        <div>
-
-                            <h2>
-                                Pricing & Inventory
-                            </h2>
-
-                            <p>
-                                Update pricing and available stock.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div className="admin-form-grid">
-
-                        {/* ORIGINAL PRICE */}
-
-                        <div className="admin-form-field">
-
-                            <label htmlFor="price">
-                                Original Price *
-                            </label>
-
-                            <div className="admin-input-prefix">
-
-                                <span>
-                                    ₹
-                                </span>
-
-                                <input
-                                    id="price"
-                                    name="price"
-                                    type="number"
-                                    min="0"
-                                    value={form.price}
-                                    onChange={handleChange}
-                                />
-
-                            </div>
-
-                        </div>
-
-
-                        {/* SELLING PRICE */}
-
-                        <div className="admin-form-field">
-
-                            <label htmlFor="discountPrice">
-                                Selling Price
-                            </label>
-
-                            <div className="admin-input-prefix">
-
-                                <span>
-                                    ₹
-                                </span>
-
-                                <input
-                                    id="discountPrice"
-                                    name="discountPrice"
-                                    type="number"
-                                    min="0"
-                                    value={form.discountPrice}
-                                    onChange={handleChange}
-                                />
-
-                            </div>
-
-                        </div>
-
-
-                        {/* STOCK */}
-
-                        <div className="admin-form-field">
-
-                            <label htmlFor="stock">
-                                Stock *
-                            </label>
-
-                            <input
-                                id="stock"
-                                name="stock"
-                                type="number"
-                                min="0"
-                                value={form.stock}
-                                onChange={handleChange}
-                            />
-
-                        </div>
-
-
-                        {/* RATING */}
-
-                        <div className="admin-form-field">
-
-                            <label htmlFor="rating">
-                                Rating
-                            </label>
-
-                            <input
-                                id="rating"
-                                name="rating"
-                                type="number"
-                                min="0"
-                                max="5"
-                                step="0.1"
-                                value={form.rating}
-                                onChange={handleChange}
-                            />
-
-                        </div>
-
-
-                        {/* NUMBER OF REVIEWS */}
-
-                        <div className="admin-form-field">
-
-                            <label htmlFor="numReviews">
-                                Number of Reviews
-                            </label>
-
-                            <input
-                                id="numReviews"
-                                name="numReviews"
-                                type="number"
-                                min="0"
-                                value={form.numReviews}
-                                onChange={handleChange}
-                            />
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-
-                {/* ================================================= */}
-                {/* ACTIONS */}
-                {/* ================================================= */}
-
-                <div className="admin-form-actions">
-
-                    <Link
-                        to="/admin/products"
-                        className="admin-secondary-button"
-                    >
-                        Cancel
-                    </Link>
-
-                    <button
-                        type="submit"
-                        className="admin-primary-button"
-                        disabled={saving}
-                    >
-                        {saving
-                            ? "Saving Changes..."
-                            : "Save Changes"}
-                    </button>
-
-                </div>
-
-            </form>
-
+      <main className="page">
+        <div className="page-header">
+          <h1>Edit Product</h1>
         </div>
+
+        <p>Loading product...</p>
+      </main>
     );
+  }
+
+  // -----------------------------
+  // UI
+  // -----------------------------
+  return (
+    <main className="page">
+      <div className="page-header">
+        <div>
+          <h1>Edit Product</h1>
+          <p className="muted">
+            Update the product details below.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          onClick={() => navigate("/admin/products")}
+        >
+          Back
+        </Button>
+      </div>
+
+      {error && (
+        <Alert>
+          {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert tone="success">
+          {success}
+        </Alert>
+      )}
+
+      <form
+        className="form-stack"
+        onSubmit={submit}
+        encType="multipart/form-data"
+      >
+        {/* NAME */}
+        <Field
+          label="Product name"
+          name="name"
+          value={form.name}
+          onChange={change}
+          required
+          disabled={busy}
+          placeholder="Enter product name"
+        />
+
+        {/* DESCRIPTION */}
+        <div className="field">
+          <label htmlFor="description">
+            Description
+          </label>
+
+          <textarea
+            id="description"
+            name="description"
+            value={form.description}
+            onChange={change}
+            disabled={busy}
+            required
+            rows={5}
+            placeholder="Enter product description"
+          />
+        </div>
+
+        {/* PRICE */}
+        <Field
+          label="Price"
+          name="price"
+          type="number"
+          value={form.price}
+          onChange={change}
+          required
+          disabled={busy}
+          min="0"
+          step="0.01"
+          placeholder="2999"
+        />
+
+        {/* DISCOUNT PRICE */}
+        <Field
+          label="Discount price"
+          name="discountPrice"
+          type="number"
+          value={form.discountPrice}
+          onChange={change}
+          disabled={busy}
+          min="0"
+          step="0.01"
+          placeholder="1499"
+        />
+
+        {/* STOCK */}
+        <Field
+          label="Stock"
+          name="stock"
+          type="number"
+          value={form.stock}
+          onChange={change}
+          required
+          disabled={busy}
+          min="0"
+          placeholder="25"
+        />
+
+        {/* CATEGORY */}
+        <Field
+          label="Category"
+          name="category"
+          value={form.category}
+          onChange={change}
+          required
+          disabled={busy}
+          placeholder="Electronics"
+        />
+
+        {/* BRAND */}
+        <Field
+          label="Brand"
+          name="brand"
+          value={form.brand}
+          onChange={change}
+          required
+          disabled={busy}
+          placeholder="boAt"
+        />
+
+        {/* RATING */}
+        <Field
+          label="Rating"
+          name="rating"
+          type="number"
+          value={form.rating}
+          onChange={change}
+          disabled={busy}
+          min="0"
+          max="5"
+          step="0.1"
+          placeholder="4.3"
+        />
+
+        {/* NUMBER OF REVIEWS */}
+        <Field
+          label="Number of reviews"
+          name="numReviews"
+          type="number"
+          value={form.numReviews}
+          onChange={change}
+          disabled={busy}
+          min="0"
+          placeholder="120"
+        />
+
+        {/* EXISTING IMAGE */}
+        {oldImage && (
+          <div>
+            <label>Current image</label>
+
+            <div style={{ marginTop: "8px" }}>
+              <img
+                src={oldImage}
+                alt={form.name}
+                style={{
+                  width: "180px",
+                  height: "180px",
+                  objectFit: "cover",
+                  borderRadius: "10px",
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* NEW IMAGE */}
+        <div className="field">
+          <label htmlFor="image">
+            Product image
+          </label>
+
+          <input
+            id="image"
+            type="file"
+            name="image"
+            accept="image/*"
+            onChange={handleImageChange}
+            disabled={busy}
+          />
+
+          <p className="muted">
+            {image
+              ? `Selected: ${image.name}`
+              : "Select a new image if you want to replace the current image."}
+          </p>
+        </div>
+
+        {/* BUTTONS */}
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginTop: "10px",
+          }}
+        >
+          <Button
+            type="submit"
+            busy={busy}
+          >
+            Update Product
+          </Button>
+
+          <Button
+            type="button"
+            onClick={() => navigate("/admin/products")}
+            disabled={busy}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </main>
+  );
 }
