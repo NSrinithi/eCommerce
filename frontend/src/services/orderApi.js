@@ -7,5 +7,6 @@ export const orderApi={
             address
         }
     }),
-    get:()=>api("/order")
+    get:()=>api("/order"),
+    getAll:()=>api("/order/all")
 }

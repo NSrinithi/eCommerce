@@ -22,4 +22,6 @@ export const adminApi = {
         api(`/products/${id}`, {
             method: "DELETE",
         }),
+
+    
 };

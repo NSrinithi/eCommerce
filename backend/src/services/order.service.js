@@ -82,3 +82,12 @@ export async function getOrdersById(userId, orderId) {
         return orders;
     }
 }
+
+export async function getAllOrders() {
+    const orders = await Order.find().populate("items.product");
+    if (orders.length === 0) {
+        throw new AppError(404, "orders not found", "ORDER_NOT_FOUND");
+    } else {
+        return orders;
+    }
+}
