@@ -10,6 +10,7 @@ export function AdminOrderPage() {
     error,
     reload,
   } = useAsyncData(orderApi.getAll);
+  console.log("data:"+data);
 
   if (loading) {
     return <LoadingScreen />;

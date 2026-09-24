@@ -474,7 +474,7 @@ export function AdminProductsPage() {
 
                             <tr>
 
-                                <th className="checkbox-column">
+                                {/* <th className="checkbox-column">
                                     <input
                                         type="checkbox"
                                         checked={
@@ -484,7 +484,7 @@ export function AdminProductsPage() {
                                         }
                                         onChange={toggleAll}
                                     />
-                                </th>
+                                </th> */}
 
                                 <th>Product</th>
 
