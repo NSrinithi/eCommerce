@@ -37,13 +37,15 @@ export function EditProductPage() {
 
     const [image, setImage] = useState(null);
     const [preview, setPreview] = useState("");
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
-    // -----------------------------
-    // Load product
-    // -----------------------------
+    // ============================
+    // LOAD PRODUCT
+    // ============================
+
     useEffect(() => {
         async function loadProduct() {
             try {
@@ -54,7 +56,7 @@ export function EditProductPage() {
 
                 console.log("Product response:", response);
 
-                // Handles common response structures
+                // Handles different possible API response structures
                 const product =
                     response?.data?.product ||
                     response?.product ||
@@ -77,7 +79,7 @@ export function EditProductPage() {
                     numReviews: product.numReviews ?? "",
                 });
 
-                // Existing product image
+                // Existing image
                 if (product.images?.length > 0) {
                     setPreview(product.images[0]);
                 }
@@ -97,11 +99,12 @@ export function EditProductPage() {
         }
     }, [id]);
 
-    // -----------------------------
-    // Input change
-    // -----------------------------
-    function handleChange(e) {
-        const { name, value } = e.target;
+    // ============================
+    // INPUT CHANGE
+    // ============================
+
+    function handleChange(event) {
+        const { name, value } = event.target;
 
         setForm((current) => ({
             ...current,
@@ -109,11 +112,12 @@ export function EditProductPage() {
         }));
     }
 
-    // -----------------------------
-    // Image change
-    // -----------------------------
-    function handleImageChange(e) {
-        const file = e.target.files?.[0];
+    // ============================
+    // IMAGE CHANGE
+    // ============================
+
+    function handleImageChange(event) {
+        const file = event.target.files?.[0];
 
         if (!file) return;
 
@@ -129,12 +133,15 @@ export function EditProductPage() {
 
         setError("");
         setImage(file);
+
+        // Show new image immediately
         setPreview(URL.createObjectURL(file));
     }
 
-    // -----------------------------
-    // Validation
-    // -----------------------------
+    // ============================
+    // VALIDATION
+    // ============================
+
     function validateForm() {
         if (!form.name.trim()) {
             return "Product name is required.";
@@ -168,8 +175,10 @@ export function EditProductPage() {
 
         if (
             form.rating !== "" &&
-            (Number(form.rating) < 0 ||
-                Number(form.rating) > 5)
+            (
+                Number(form.rating) < 0 ||
+                Number(form.rating) > 5
+            )
         ) {
             return "Rating must be between 0 and 5.";
         }
@@ -177,11 +186,12 @@ export function EditProductPage() {
         return "";
     }
 
-    // -----------------------------
-    // Submit
-    // -----------------------------
-    async function handleSubmit(e) {
-        e.preventDefault();
+    // ============================
+    // SUBMIT
+    // ============================
+
+    async function handleSubmit(event) {
+        event.preventDefault();
 
         const validationError = validateForm();
 
@@ -241,19 +251,17 @@ export function EditProductPage() {
                 form.numReviews || "0"
             );
 
-            // Only send image if admin selected a new one
+            // IMPORTANT:
+            // Only send an image if a new image was selected.
             if (image) {
                 formData.append("images", image);
             }
 
             console.log("Updating product:", id);
 
-            for (const [key, value] of formData.entries()) {
-                console.log(key, value);
-            }
-
             await adminApi.updateProduct(id, formData);
 
+            // Go back to admin products
             navigate("/admin/products");
         } catch (err) {
             console.error("Update product error:", err);
@@ -267,9 +275,10 @@ export function EditProductPage() {
         }
     }
 
-    // -----------------------------
-    // Loading
-    // -----------------------------
+    // ============================
+    // LOADING
+    // ============================
+
     if (loading) {
         return (
             <div className="admin-page">
@@ -278,12 +287,14 @@ export function EditProductPage() {
         );
     }
 
-    // -----------------------------
-    // Error
-    // -----------------------------
+    // ============================
+    // ERROR WHILE LOADING
+    // ============================
+
     if (error && !form.name) {
         return (
             <div className="admin-page">
+
                 <div className="admin-form-error">
                     {error}
                 </div>
@@ -294,26 +305,36 @@ export function EditProductPage() {
                 >
                     ← Back to Products
                 </Link>
+
             </div>
         );
     }
 
+    // ============================
+    // PAGE
+    // ============================
+
     return (
         <div className="admin-page">
 
-            {/* Header */}
+            {/* ================= HEADER ================= */}
+
             <div className="admin-page-header">
 
                 <div>
+
                     <p className="admin-eyebrow">
                         CATALOG
                     </p>
 
-                    <h1>Edit Product</h1>
+                    <h1>
+                        Edit Product
+                    </h1>
 
                     <p>
                         Update the details of your product.
                     </p>
+
                 </div>
 
                 <Link
@@ -325,50 +346,75 @@ export function EditProductPage() {
 
             </div>
 
-            {/* Error */}
+
+            {/* ================= ERROR ================= */}
+
             {error && (
                 <div className="admin-form-error">
                     {error}
                 </div>
             )}
 
+
+            {/* ================= FORM ================= */}
+
             <form
                 className="admin-product-form"
                 onSubmit={handleSubmit}
             >
 
-                {/* IMAGE */}
+                {/* ================================================= */}
+                {/* PRODUCT IMAGE */}
+                {/* ================================================= */}
+
                 <section className="admin-form-card">
 
                     <div className="admin-form-card-header">
+
                         <div>
-                            <h2>Product Image</h2>
+
+                            <h2>
+                                Product Image
+                            </h2>
 
                             <p>
                                 Change the product image if needed.
                             </p>
+
                         </div>
+
                     </div>
+
 
                     <div className="admin-image-upload">
 
                         <div className="admin-image-preview">
 
                             {preview ? (
+
                                 <img
                                     src={preview}
                                     alt="Product preview"
                                 />
+
                             ) : (
+
                                 <div className="admin-image-placeholder">
-                                    <span>＋</span>
+
+                                    <span>
+                                        ＋
+                                    </span>
+
                                     <p>
                                         No image selected
                                     </p>
+
                                 </div>
+
                             )}
 
                         </div>
+
 
                         <div className="admin-image-upload-info">
 
@@ -407,11 +453,17 @@ export function EditProductPage() {
 
                 </section>
 
+
+                {/* ================================================= */}
                 {/* BASIC INFORMATION */}
+                {/* ================================================= */}
+
                 <section className="admin-form-card">
 
                     <div className="admin-form-card-header">
+
                         <div>
+
                             <h2>
                                 Basic Information
                             </h2>
@@ -419,12 +471,16 @@ export function EditProductPage() {
                             <p>
                                 Update the main details of your product.
                             </p>
+
                         </div>
+
                     </div>
+
 
                     <div className="admin-form-grid">
 
-                        {/* Name */}
+                        {/* PRODUCT NAME */}
+
                         <div className="admin-form-field full">
 
                             <label htmlFor="name">
@@ -441,7 +497,9 @@ export function EditProductPage() {
 
                         </div>
 
-                        {/* Brand */}
+
+                        {/* BRAND */}
+
                         <div className="admin-form-field">
 
                             <label htmlFor="brand">
@@ -458,7 +516,9 @@ export function EditProductPage() {
 
                         </div>
 
-                        {/* Category */}
+
+                        {/* CATEGORY */}
+
                         <div className="admin-form-field">
 
                             <label htmlFor="category">
@@ -477,19 +537,23 @@ export function EditProductPage() {
                                 </option>
 
                                 {CATEGORIES.map((category) => (
+
                                     <option
                                         key={category}
                                         value={category}
                                     >
                                         {category}
                                     </option>
+
                                 ))}
 
                             </select>
 
                         </div>
 
-                        {/* Description */}
+
+                        {/* DESCRIPTION */}
+
                         <div className="admin-form-field full">
 
                             <label htmlFor="description">
@@ -511,12 +575,17 @@ export function EditProductPage() {
 
                 </section>
 
+
+                {/* ================================================= */}
                 {/* PRICING & INVENTORY */}
+                {/* ================================================= */}
+
                 <section className="admin-form-card">
 
                     <div className="admin-form-card-header">
 
                         <div>
+
                             <h2>
                                 Pricing & Inventory
                             </h2>
@@ -524,13 +593,16 @@ export function EditProductPage() {
                             <p>
                                 Update pricing and available stock.
                             </p>
+
                         </div>
 
                     </div>
 
+
                     <div className="admin-form-grid">
 
-                        {/* Original price */}
+                        {/* ORIGINAL PRICE */}
+
                         <div className="admin-form-field">
 
                             <label htmlFor="price">
@@ -539,7 +611,9 @@ export function EditProductPage() {
 
                             <div className="admin-input-prefix">
 
-                                <span>₹</span>
+                                <span>
+                                    ₹
+                                </span>
 
                                 <input
                                     id="price"
@@ -554,7 +628,9 @@ export function EditProductPage() {
 
                         </div>
 
-                        {/* Selling price */}
+
+                        {/* SELLING PRICE */}
+
                         <div className="admin-form-field">
 
                             <label htmlFor="discountPrice">
@@ -563,7 +639,9 @@ export function EditProductPage() {
 
                             <div className="admin-input-prefix">
 
-                                <span>₹</span>
+                                <span>
+                                    ₹
+                                </span>
 
                                 <input
                                     id="discountPrice"
@@ -578,7 +656,9 @@ export function EditProductPage() {
 
                         </div>
 
-                        {/* Stock */}
+
+                        {/* STOCK */}
+
                         <div className="admin-form-field">
 
                             <label htmlFor="stock">
@@ -596,7 +676,9 @@ export function EditProductPage() {
 
                         </div>
 
-                        {/* Rating */}
+
+                        {/* RATING */}
+
                         <div className="admin-form-field">
 
                             <label htmlFor="rating">
@@ -616,7 +698,9 @@ export function EditProductPage() {
 
                         </div>
 
-                        {/* Reviews */}
+
+                        {/* NUMBER OF REVIEWS */}
+
                         <div className="admin-form-field">
 
                             <label htmlFor="numReviews">
@@ -638,7 +722,11 @@ export function EditProductPage() {
 
                 </section>
 
+
+                {/* ================================================= */}
                 {/* ACTIONS */}
+                {/* ================================================= */}
+
                 <div className="admin-form-actions">
 
                     <Link
