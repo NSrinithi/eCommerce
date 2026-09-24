@@ -13,6 +13,7 @@ import { ProductsPage } from '../pages/products/ProductsPage.jsx';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage.jsx';
 import { AddProductPage } from '../pages/admin/AddProductPage.jsx';
 import { AdminProductsPage } from '../pages/admin/AdminProductsPage.jsx';
+import { EditProductPage } from '../pages/admin/EditProductPage.jsx';
 import { OrdersPage } from '../pages/orders/OrdersPage.jsx';
 import { CheckOutPage } from '../pages/checkout/CheckOutPage.jsx';
 import { NotFoundPage } from '../pages/NotFoundPage.jsx';
@@ -36,7 +37,8 @@ export function AppRoutes() {
         <Route path='/orders' element={<OrdersPage/>}/>
         <Route path='/admin/dashboard' element={<RequiredRole role="ADMIN"><AdminDashboardPage/></RequiredRole>}/>
         <Route path='/admin/products' element={<RequiredRole role="ADMIN"><AdminProductsPage/></RequiredRole>}/>
-        <Route path='/admin/add' element={<AddProductPage/>}/>
+        <Route path='/admin/add' element={<RequiredRole role="ADMIN"><AddProductPage/></RequiredRole>}/>
+        <Route path='/admin/edit' element={<RequiredRole role="ADMIN"><EditProductPage/></RequiredRole>}/>
         <Route path='/checkOut' element={<CheckOutPage/>}/>
         <Route path='/cart' element={<CartPage/>}/>
       </Route>

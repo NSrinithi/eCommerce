@@ -5,12 +5,12 @@ export function getNavigation(role) {
     return [
       {
         path: '/admin/dashboard',
-        label: 'Admin Dashboard',
+        label: 'Dashboard',
         icon: 'grid',
       },
       {
         path: '/admin/products',
-        label: 'Admin Products',
+        label: 'Products',
         icon: 'grid',
       },
       {

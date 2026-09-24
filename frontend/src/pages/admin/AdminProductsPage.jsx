@@ -717,7 +717,7 @@ export function AdminProductsPage() {
                                             <div className="modern-actions">
 
                                                 <Link
-                                                    to={`/admin/edit/${product._id}`}
+                                                    to="/admin/edit"
                                                     className="icon-action edit"
                                                     title="Edit product"
                                                 >
