@@ -31,3 +31,17 @@ export function GuestRoute() {
     {user ? <Navigate to="/dashboard" replace /> : <Outlet />}
   </SessionGate>;
 }
+
+export function RequiredRole({ role, children }) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== role) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+}

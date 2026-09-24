@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { AppLayout } from '../layouts/AppLayout.jsx';
 import { AuthLayout } from '../layouts/AuthLayout.jsx';
-import { ProtectedRoute, GuestRoute } from './ProtectedRoute.jsx';
+import { ProtectedRoute, GuestRoute,RequiredRole } from './ProtectedRoute.jsx';
 import { LoginPage } from '../pages/auth/LoginPage.jsx';
 import { RegisterPage } from '../pages/auth/RegisterPage.jsx';
 import { DashboardPage } from '../pages/dashboard/DashboardPage.jsx';
