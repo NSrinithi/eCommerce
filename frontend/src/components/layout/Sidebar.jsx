@@ -6,15 +6,13 @@ import { Brand } from './Brand.jsx';
 import { Icon } from '../ui/Icon.jsx';
 
 export function Sidebar({
+  collapsed,
   onToggle,
   mobileOpen,
-  onClose
+  onClose,
 }) {
-  const { user } = useAuth();
-
-  const navigation = getNavigation(user?.role);
-
   const dialog = useRef(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (mobileOpen) {
@@ -24,12 +22,11 @@ export function Sidebar({
     }
   }, [mobileOpen]);
 
+  const navigation = getNavigation(user?.role);
+
   function links(compact = false) {
     return (
-      <nav
-        aria-label="Main navigation"
-        className="sidebar-nav"
-      >
+      <nav aria-label="Main navigation" className="sidebar-nav">
         {navigation.map((item) => (
           <NavLink
             key={item.path}
@@ -53,12 +50,7 @@ export function Sidebar({
 
   return (
     <>
-      {/* DESKTOP SIDEBAR */}
-      <aside
-        className={`sidebar ${
-          collapsed ? 'sidebar--collapsed' : ''
-        }`}
-      >
+      <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
         <div className="sidebar-brand">
           <Brand compact={collapsed} />
         </div>
@@ -70,9 +62,7 @@ export function Sidebar({
             className="collapse-button"
             onClick={onToggle}
             aria-label={
-              collapsed
-                ? 'Expand sidebar'
-                : 'Collapse sidebar'
+              collapsed ? 'Expand sidebar' : 'Collapse sidebar'
             }
             aria-expanded={!collapsed}
           >
@@ -81,14 +71,11 @@ export function Sidebar({
               className={!collapsed ? 'rotate' : ''}
             />
 
-            {!collapsed && (
-              <span>Collapse sidebar</span>
-            )}
+            {!collapsed && <span>Collapse sidebar</span>}
           </button>
         </div>
       </aside>
 
-      {/* MOBILE SIDEBAR */}
       <dialog
         ref={dialog}
         className="mobile-drawer"
@@ -101,7 +88,6 @@ export function Sidebar({
         }}
       >
         <div className="mobile-drawer-content">
-
           <div className="drawer-heading">
             <Brand />
 
@@ -115,7 +101,6 @@ export function Sidebar({
           </div>
 
           {links()}
-
         </div>
       </dialog>
     </>

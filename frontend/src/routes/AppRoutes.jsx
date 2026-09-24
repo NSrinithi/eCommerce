@@ -34,7 +34,7 @@ export function AppRoutes() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path='/orders' element={<OrdersPage/>}/>
-        <Route path='/admin' element={<RequiredRole role="ADMIN"><AdminDashboardPage/></RequiredRole>}/>
+        <Route path='/admin/dashboard' element={<RequiredRole role="ADMIN"><AdminDashboardPage/></RequiredRole>}/>
         <Route path='/admin/products' element={<RequiredRole role="ADMIN"><AdminProductsPage/></RequiredRole>}/>
         <Route path='/admin/add' element={<AddProductPage/>}/>
         <Route path='/checkOut' element={<CheckOutPage/>}/>
