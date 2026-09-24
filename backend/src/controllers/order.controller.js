@@ -36,7 +36,7 @@ export async function getOrders(req, res) {
 
 export async function getAllOrders(req, res) {
     try {
-        const result = await os.getOrders();
+        const result = await os.getAllOrders();
         res.status(200).json({
             success:true,
             data:result
