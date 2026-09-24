@@ -75,9 +75,11 @@ export function Header({ onMenu }) {
         </Link>
         <span className="header-divider" />
 
+        <Link to="/profile">
         <span className="avatar cursor-pointer" title={user.name}>
           {Array.from(user.name)[0]?.toUpperCase()}
         </span>
+        </Link>
 
         <button
           className="icon-button"
