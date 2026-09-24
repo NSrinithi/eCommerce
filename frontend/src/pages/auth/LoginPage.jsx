@@ -22,13 +22,13 @@ export function LoginPage() {
     setBusy(true);
     setError('');
     try {
-      await login(form);
+      const loggedInUser =await login(form);
       const from = location.state?.from;
       // if (typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')) {
       //   navigate(from, { replace: true });
       //   return;
       // }
-      console.log(user?.role);
+      console.log(loggedInUser);
       if (user?.role === 'ADMIN') {
         navigate('/admin/dashboard', { replace: true });
       } else {
