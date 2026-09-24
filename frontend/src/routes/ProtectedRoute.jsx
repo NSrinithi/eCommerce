@@ -27,11 +27,20 @@ export function ProtectedRoute() {
 }
 export function GuestRoute() {
   const { user } = useAuth();
-  return <SessionGate>
-    {user ? <Navigate to="/dashboard" replace /> : <Outlet />}
-  </SessionGate>;
-}
 
+  return (
+    <SessionGate>
+      {user ? (
+        <Navigate
+          to={user.role === 'ADMIN' ? '/admin/dashboard' : '/products'}
+          replace
+        />
+      ) : (
+        <Outlet />
+      )}
+    </SessionGate>
+  );
+}
 export function RequiredRole({ role, children }) {
   const { user } = useAuth();
 
