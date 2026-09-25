@@ -91,10 +91,6 @@ export function AddProductPage() {
             <div className="add-product-header">
 
                 <div>
-                    <div className="admin-breadcrumb">
-                        Catalog / Products / Add Product
-                    </div>
-
                     <h1>Add Product</h1>
 
                     <p>

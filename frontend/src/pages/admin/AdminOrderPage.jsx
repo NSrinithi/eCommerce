@@ -85,9 +85,6 @@ export function AdminOrderPage() {
       <div className="orders-page-header">
 
         <div>
-          <div className="orders-breadcrumb">
-            Admin / Orders
-          </div>
 
           <h1>Orders</h1>
 

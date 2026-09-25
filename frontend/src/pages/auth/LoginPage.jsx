@@ -71,6 +71,7 @@ export function LoginPage() {
           required
           value={form.password}
           onChange={change}
+          placeholder="password"
           disabled={busy} />
         <button
           type="button"

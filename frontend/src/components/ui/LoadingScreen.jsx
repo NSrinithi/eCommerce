@@ -1,4 +1,4 @@
-export function LoadingScreen({ message = 'Loading your workspace…' }) {
+export function LoadingScreen({ message = 'Loading...' }) {
   return <div className="loading-screen" role="status">
     <span className="spinner" />
     <p>
