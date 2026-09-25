@@ -5292,3 +5292,10 @@
 .wishlist-button.active {
   color: #e53935;
 }
+
+.product-card > button {
+    width: 100%;
+    margin-top: auto;
+    padding: 10px 12px;
+    font-weight: 600;
+}
