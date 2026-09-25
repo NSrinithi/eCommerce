@@ -7,25 +7,27 @@ import { Alert } from "../../components/ui/Alert.jsx";
 const PAGE_SIZE = 10;
 
 function formatCurrency(value) {
-    return `₹${Number(value || 0).toLocaleString("en-IN")}`;
+    return `₹${Number(value ?? 0).toLocaleString("en-IN")}`;
 }
 
 function getStockStatus(stock) {
-    if (stock === 0) {
+    const value = Number(stock ?? 0);
+
+    if (value === 0) {
         return {
             label: "Out of stock",
             className: "out",
         };
     }
 
-    if (stock <= 5) {
+    if (value <= 5) {
         return {
             label: "Critical",
             className: "critical",
         };
     }
 
-    if (stock <= 10) {
+    if (value <= 10) {
         return {
             label: "Low stock",
             className: "low",
@@ -52,9 +54,9 @@ export function AdminProductsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // =========================================================
+    // ============================================================
     // LOAD PRODUCTS
-    // =========================================================
+    // ============================================================
 
     async function loadProducts(currentPage = 1) {
         try {
@@ -66,83 +68,129 @@ export function AdminProductsPage() {
                 PAGE_SIZE
             );
 
+            console.log("=================================");
             console.log("PRODUCT API RESPONSE:", response);
+            console.log("=================================");
 
             /*
-             * Your backend response:
+             * The API can reach this component in different shapes
+             * depending on how adminApi.js is written.
              *
-             * {
-             *   success: true,
-             *   data: [...10 products...],
-             *   pagination: {
-             *      page: 1,
-             *      limit: 10,
-             *      totalProduct: 16,
-             *      totalPages: 2
-             *   }
-             * }
+             * We normalize all common Axios/API response shapes here.
              */
 
-            // ---------------------------------------------------------
-            // Normalize API response
-            // ---------------------------------------------------------
+            let payload = response;
 
-            const payload =
-                response?.data?.success === true
-                    ? response.data
-                    : response;
+            // Axios response:
+            // response.data = { success, data, pagination }
+            if (
+                response &&
+                response.data &&
+                typeof response.data === "object" &&
+                !Array.isArray(response.data)
+            ) {
+                if (
+                    response.data.success !== undefined ||
+                    response.data.data !== undefined ||
+                    response.data.pagination !== undefined
+                ) {
+                    payload = response.data;
+                }
+            }
 
-            // ---------------------------------------------------------
-            // Products
-            // ---------------------------------------------------------
+            console.log("NORMALIZED PAYLOAD:", payload);
 
-            const productList = Array.isArray(payload?.data)
-                ? payload.data
-                : [];
+            // =====================================================
+            // PRODUCTS
+            // =====================================================
 
-            // ---------------------------------------------------------
-            // Pagination
-            // ---------------------------------------------------------
+            let productList = [];
 
-            const paginationData = payload?.pagination || {
-                page: currentPage,
-                limit: PAGE_SIZE,
-                totalProduct: 0,
-                totalPages: 1,
-            };
+            if (Array.isArray(payload)) {
+                // API returned array directly
+                productList = payload;
+            } else if (Array.isArray(payload?.data)) {
+                // Normal API response
+                productList = payload.data;
+            } else if (Array.isArray(payload?.products)) {
+                // Alternative API response
+                productList = payload.products;
+            } else if (Array.isArray(payload?.data?.data)) {
+                // Double wrapped response
+                productList = payload.data.data;
+            }
+
+            // =====================================================
+            // PAGINATION
+            // =====================================================
+
+            let paginationData = null;
+
+            if (payload?.pagination) {
+                paginationData = payload.pagination;
+            } else if (payload?.data?.pagination) {
+                paginationData = payload.data.pagination;
+            } else if (response?.pagination) {
+                paginationData = response.pagination;
+            }
+
+            /*
+             * IMPORTANT:
+             *
+             * Your backend returns:
+             *
+             * totalProduct: 16
+             * totalPages: 2
+             *
+             * We preserve those values.
+             */
+
+            const totalProduct = Number(
+                paginationData?.totalProduct ??
+                paginationData?.total ??
+                paginationData?.totalProducts ??
+                productList.length
+            );
+
+            const totalPages = Number(
+                paginationData?.totalPages ??
+                Math.ceil(totalProduct / PAGE_SIZE) ??
+                1
+            );
+
+            const currentApiPage = Number(
+                paginationData?.page ?? currentPage
+            );
+
+            const currentApiLimit = Number(
+                paginationData?.limit ?? PAGE_SIZE
+            );
 
             console.log("PRODUCT LIST:", productList);
-            console.log("PAGINATION:", paginationData);
+            console.log("PRODUCT COUNT:", productList.length);
+            console.log("TOTAL PRODUCTS:", totalProduct);
+            console.log("TOTAL PAGES:", totalPages);
 
-            // ---------------------------------------------------------
-            // Set products
-            // ---------------------------------------------------------
+            // =====================================================
+            // SET STATE
+            // =====================================================
 
             setProducts(productList);
 
-            // ---------------------------------------------------------
-            // Set pagination
-            // ---------------------------------------------------------
-
             setPagination({
-                page: Number(paginationData.page) || currentPage,
-
-                limit:
-                    Number(paginationData.limit) ||
-                    PAGE_SIZE,
-
-                totalProduct:
-                    Number(paginationData.totalProduct) || 0,
-
-                totalPages:
-                    Number(paginationData.totalPages) || 1,
+                page: currentApiPage,
+                limit: currentApiLimit,
+                totalProduct,
+                totalPages: Math.max(1, totalPages),
             });
 
         } catch (err) {
             console.error("PRODUCT LOAD ERROR:", err);
 
             setError(
-                err?.message || "Failed to load products."
+                err?.response?.data?.message ||
+                err?.message ||
+                "Failed to load products."
             );
 
             setProducts([]);
@@ -153,66 +201,74 @@ export function AdminProductsPage() {
                 totalProduct: 0,
                 totalPages: 1,
             });
-
         } finally {
             setLoading(false);
         }
     }
 
-    // =========================================================
+    // ============================================================
     // INITIAL LOAD
-    // =========================================================
+    // ============================================================
 
     useEffect(() => {
         loadProducts(page);
     }, [page]);
 
-    // =========================================================
-    // DELETE
-    // =========================================================
+    // ============================================================
+    // DELETE PRODUCT
+    // ============================================================
 
     async function handleDelete(productId, productName) {
         const confirmed = window.confirm(
             `Are you sure you want to delete "${productName}"?`
         );
 
-        if (!confirmed) return;
+        if (!confirmed) {
+            return;
+        }
 
         try {
             setError("");
 
             await adminApi.deleteProduct(productId);
 
-            // If deleting the only item on page 2,
-            // move back to page 1.
+            /*
+             * If page 2 has only one product and we delete it,
+             * automatically go back to page 1.
+             */
             if (products.length === 1 && page > 1) {
-                setPage((current) => current - 1);
+                setPage((currentPage) => currentPage - 1);
                 return;
             }
 
             await loadProducts(page);
+
         } catch (err) {
             console.error("DELETE ERROR:", err);
 
             setError(
-                err?.message || "Failed to delete product."
+                err?.response?.data?.message ||
+                err?.message ||
+                "Failed to delete product."
             );
         }
     }
 
-    // =========================================================
+    // ============================================================
     // REFRESH
-    // =========================================================
+    // ============================================================
 
     async function refreshProducts() {
         await loadProducts(page);
     }
 
-    // =========================================================
+    // ============================================================
     // PAGE CHANGE
-    // =========================================================
+    // ============================================================
 
     function changePage(newPage) {
+        if (loading) return;
+
         if (newPage < 1) return;
 
         if (newPage > pagination.totalPages) return;
@@ -227,23 +283,38 @@ export function AdminProductsPage() {
         });
     }
 
-    // =========================================================
+    // ============================================================
     // LOADING
-    // =========================================================
+    // ============================================================
 
     if (loading && products.length === 0) {
         return <LoadingScreen />;
     }
 
-    // =========================================================
+    // ============================================================
+    // CALCULATIONS
+    // ============================================================
+
+    const showingStart =
+        pagination.totalProduct === 0
+            ? 0
+            : (page - 1) * PAGE_SIZE + 1;
+
+    const showingEnd =
+        Math.min(
+            page * PAGE_SIZE,
+            pagination.totalProduct
+        );
+
+    // ============================================================
     // RENDER
-    // =========================================================
+    // ============================================================
 
     return (
         <main className="products-page">
 
             {/* =====================================================
-                PAGE HEADER
+                HEADER
             ====================================================== */}
 
             <section className="products-header">
@@ -273,7 +344,9 @@ export function AdminProductsPage() {
                             ↻
                         </span>
 
-                        {loading ? "Refreshing..." : "Refresh"}
+                        {loading
+                            ? "Refreshing..."
+                            : "Refresh"}
                     </button>
 
                     <Link
@@ -288,7 +361,6 @@ export function AdminProductsPage() {
 
             </section>
 
-
             {/* =====================================================
                 ERROR
             ====================================================== */}
@@ -299,12 +371,13 @@ export function AdminProductsPage() {
                 </div>
             )}
 
-
             {/* =====================================================
-                SUMMARY CARDS
+                STAT CARDS
             ====================================================== */}
 
             <section className="products-stats">
+
+                {/* TOTAL PRODUCTS */}
 
                 <div className="products-stat-card">
 
@@ -322,6 +395,7 @@ export function AdminProductsPage() {
 
                 </div>
 
+                {/* CURRENT PAGE */}
 
                 <div className="products-stat-card">
 
@@ -334,14 +408,17 @@ export function AdminProductsPage() {
 
                         <strong>
                             {page}
+
                             <small>
-                                {" "} / {pagination.totalPages}
+                                {" "}
+                                / {pagination.totalPages}
                             </small>
                         </strong>
                     </div>
 
                 </div>
 
+                {/* SHOWING */}
 
                 <div className="products-stat-card">
 
@@ -361,20 +438,24 @@ export function AdminProductsPage() {
 
             </section>
 
-
             {/* =====================================================
-                CATALOG PANEL
+                PRODUCT CATALOG
             ====================================================== */}
 
             <section className="products-panel">
 
+                {/* PANEL HEADER */}
+
                 <div className="products-panel-header">
 
                     <div>
-                        <h2>Product Catalog</h2>
+                        <h2>
+                            Product Catalog
+                        </h2>
 
                         <p>
-                            View and manage all products in your store.
+                            View and manage all products in your
+                            store.
                         </p>
                     </div>
 
@@ -384,9 +465,8 @@ export function AdminProductsPage() {
 
                 </div>
 
-
                 {/* =================================================
-                    TABLE
+                    EMPTY
                 ================================================== */}
 
                 {!loading && products.length === 0 ? (
@@ -397,11 +477,13 @@ export function AdminProductsPage() {
                             📦
                         </div>
 
-                        <h3>No products found</h3>
+                        <h3>
+                            No products found
+                        </h3>
 
                         <p>
-                            Add your first product to start building
-                            your catalog.
+                            Add your first product to start
+                            building your catalog.
                         </p>
 
                         <Link
@@ -414,6 +496,10 @@ export function AdminProductsPage() {
                     </div>
 
                 ) : (
+
+                    /* =================================================
+                       TABLE
+                    ================================================== */
 
                     <div className="products-table-container">
 
@@ -435,13 +521,14 @@ export function AdminProductsPage() {
 
                             </thead>
 
-
                             <tbody>
 
                                 {products.map((product) => {
 
                                     const price =
-                                        Number(product.price || 0);
+                                        Number(
+                                            product.price ?? 0
+                                        );
 
                                     const discountPrice =
                                         Number(
@@ -451,15 +538,26 @@ export function AdminProductsPage() {
                                         );
 
                                     const stock =
-                                        Number(product.stock || 0);
+                                        Number(
+                                            product.stock ?? 0
+                                        );
 
                                     const rating =
-                                        Number(product.rating || 0);
+                                        Number(
+                                            product.rating ?? 0
+                                        );
+
+                                    const reviewCount =
+                                        Number(
+                                            product.numReviews ?? 0
+                                        );
 
                                     const discount =
-                                        price > discountPrice
+                                        price > 0 &&
+                                        discountPrice < price
                                             ? Math.round(
-                                                ((price - discountPrice) /
+                                                ((price -
+                                                    discountPrice) /
                                                     price) *
                                                 100
                                             )
@@ -475,7 +573,9 @@ export function AdminProductsPage() {
                                             className="product-row"
                                         >
 
-                                            {/* PRODUCT */}
+                                            {/* =====================
+                                                PRODUCT
+                                            ====================== */}
 
                                             <td>
 
@@ -493,6 +593,7 @@ export function AdminProductsPage() {
                                                                     product.name
                                                                 }
                                                                 className="product-image"
+                                                                loading="lazy"
                                                             />
 
                                                         ) : (
@@ -504,7 +605,6 @@ export function AdminProductsPage() {
                                                         )}
 
                                                     </div>
-
 
                                                     <div className="product-details">
 
@@ -530,8 +630,9 @@ export function AdminProductsPage() {
 
                                             </td>
 
-
-                                            {/* CATEGORY */}
+                                            {/* =====================
+                                                CATEGORY
+                                            ====================== */}
 
                                             <td>
 
@@ -542,8 +643,9 @@ export function AdminProductsPage() {
 
                                             </td>
 
-
-                                            {/* PRICE */}
+                                            {/* =====================
+                                                PRICE
+                                            ====================== */}
 
                                             <td>
 
@@ -577,8 +679,9 @@ export function AdminProductsPage() {
 
                                             </td>
 
-
-                                            {/* STOCK */}
+                                            {/* =====================
+                                                STOCK
+                                            ====================== */}
 
                                             <td>
 
@@ -596,8 +699,9 @@ export function AdminProductsPage() {
 
                                             </td>
 
-
-                                            {/* RATING */}
+                                            {/* =====================
+                                                RATING
+                                            ====================== */}
 
                                             <td>
 
@@ -612,34 +716,40 @@ export function AdminProductsPage() {
                                                     </strong>
 
                                                     <span className="review-count">
-                                                        ({Number(
-                                                            product.numReviews || 0
-                                                        ).toLocaleString("en-IN")})
+                                                        (
+                                                        {reviewCount.toLocaleString(
+                                                            "en-IN"
+                                                        )}
+                                                        )
                                                     </span>
 
                                                 </div>
 
                                             </td>
 
-
-                                            {/* STATUS */}
+                                            {/* =====================
+                                                STATUS
+                                            ====================== */}
 
                                             <td>
 
                                                 <span
                                                     className={`status-badge status-${stockStatus.className}`}
                                                 >
+
                                                     <span className="status-dot">
                                                         ●
                                                     </span>
 
                                                     {stockStatus.label}
+
                                                 </span>
 
                                             </td>
 
-
-                                            {/* ACTIONS */}
+                                            {/* =====================
+                                                ACTIONS
+                                            ====================== */}
 
                                             <td>
 
@@ -684,7 +794,6 @@ export function AdminProductsPage() {
 
                 )}
 
-
                 {/* =================================================
                     PAGINATION
                 ================================================== */}
@@ -698,16 +807,13 @@ export function AdminProductsPage() {
                             Showing{" "}
 
                             <strong>
-                                {((page - 1) * PAGE_SIZE) + 1}
+                                {showingStart}
                             </strong>
 
                             {" - "}
 
                             <strong>
-                                {Math.min(
-                                    page * PAGE_SIZE,
-                                    pagination.totalProduct
-                                )}
+                                {showingEnd}
                             </strong>
 
                             {" of "}
@@ -718,13 +824,17 @@ export function AdminProductsPage() {
 
                         </div>
 
-
                         <div className="pagination-controls">
+
+                            {/* PREVIOUS */}
 
                             <button
                                 type="button"
                                 className="pagination-arrow"
-                                disabled={page === 1 || loading}
+                                disabled={
+                                    page === 1 ||
+                                    loading
+                                }
                                 onClick={() =>
                                     changePage(page - 1)
                                 }
@@ -732,24 +842,30 @@ export function AdminProductsPage() {
                                 ←
                             </button>
 
+                            {/* PAGE NUMBERS */}
 
                             {Array.from(
                                 {
-                                    length: pagination.totalPages,
+                                    length:
+                                        pagination.totalPages,
                                 },
-                                (_, index) => index + 1
+                                (_, index) =>
+                                    index + 1
                             ).map((pageNumber) => (
 
                                 <button
                                     key={pageNumber}
                                     type="button"
                                     disabled={loading}
-                                    className={`pagination-number ${pageNumber === page
+                                    className={`pagination-number ${
+                                        pageNumber === page
                                             ? "active"
                                             : ""
-                                        }`}
+                                    }`}
                                     onClick={() =>
-                                        changePage(pageNumber)
+                                        changePage(
+                                            pageNumber
+                                        )
                                     }
                                 >
                                     {pageNumber}
@@ -757,12 +873,14 @@ export function AdminProductsPage() {
 
                             ))}
 
+                            {/* NEXT */}
 
                             <button
                                 type="button"
                                 className="pagination-arrow"
                                 disabled={
-                                    page === pagination.totalPages ||
+                                    page ===
+                                        pagination.totalPages ||
                                     loading
                                 }
                                 onClick={() =>
