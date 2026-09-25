@@ -59,152 +59,81 @@ export function AdminProductsPage() {
     // ============================================================
 
     async function loadProducts(currentPage = 1) {
-        try {
-            setLoading(true);
-            setError("");
+    try {
+        setLoading(true);
+        setError("");
 
-            const response = await adminApi.getProducts(
-                currentPage,
-                PAGE_SIZE
-            );
+        const response = await adminApi.getProducts(
+            currentPage,
+            PAGE_SIZE
+        );
 
-            console.log("=================================");
-            console.log("PRODUCT API RESPONSE:", response);
-            console.log("=================================");
+        console.log("=================================");
+        console.log("PRODUCT API RESPONSE:", response);
+        console.log("PRODUCTS:", response?.data);
+        console.log("PAGINATION:", response?.pagination);
+        console.log(
+            "TOTAL PRODUCTS:",
+            response?.pagination?.totalProduct
+        );
+        console.log(
+            "TOTAL PAGES:",
+            response?.pagination?.totalPages
+        );
+        console.log("=================================");
 
-            /*
-             * The API can reach this component in different shapes
-             * depending on how adminApi.js is written.
-             *
-             * We normalize all common Axios/API response shapes here.
-             */
-
-            let payload = response;
-
-            // Axios response:
-            // response.data = { success, data, pagination }
-            if (
-                response &&
-                response.data &&
-                typeof response.data === "object" &&
-                !Array.isArray(response.data)
-            ) {
-                if (
-                    response.data.success !== undefined ||
-                    response.data.data !== undefined ||
-                    response.data.pagination !== undefined
-                ) {
-                    payload = response.data;
-                }
-            }
-
-            console.log("NORMALIZED PAYLOAD:", payload);
-
-            // =====================================================
-            // PRODUCTS
-            // =====================================================
-
-            let productList = [];
-
-            if (Array.isArray(payload)) {
-                // API returned array directly
-                productList = payload;
-            } else if (Array.isArray(payload?.data)) {
-                // Normal API response
-                productList = payload.data;
-            } else if (Array.isArray(payload?.products)) {
-                // Alternative API response
-                productList = payload.products;
-            } else if (Array.isArray(payload?.data?.data)) {
-                // Double wrapped response
-                productList = payload.data.data;
-            }
-
-            // =====================================================
-            // PAGINATION
-            // =====================================================
-
-            let paginationData = null;
-
-            if (payload?.pagination) {
-                paginationData = payload.pagination;
-            } else if (payload?.data?.pagination) {
-                paginationData = payload.data.pagination;
-            } else if (response?.pagination) {
-                paginationData = response.pagination;
-            }
-
-            /*
-             * IMPORTANT:
-             *
-             * Your backend returns:
-             *
-             * totalProduct: 16
-             * totalPages: 2
-             *
-             * We preserve those values.
-             */
-
-            const totalProduct = Number(
-                paginationData?.totalProduct ??
-                paginationData?.total ??
-                paginationData?.totalProducts ??
-                productList.length
-            );
-
-            const totalPages = Number(
-                paginationData?.totalPages ??
-                Math.ceil(totalProduct / PAGE_SIZE) ??
-                1
-            );
-
-            const currentApiPage = Number(
-                paginationData?.page ?? currentPage
-            );
-
-            const currentApiLimit = Number(
-                paginationData?.limit ?? PAGE_SIZE
-            );
-
-            console.log("PRODUCT LIST:", productList);
-            console.log("PRODUCT COUNT:", productList.length);
-            console.log("TOTAL PRODUCTS:", totalProduct);
-            console.log("TOTAL PAGES:", totalPages);
-
-            // =====================================================
-            // SET STATE
-            // =====================================================
-
-            setProducts(productList);
-
-            setPagination({
-                page: currentApiPage,
-                limit: currentApiLimit,
-                totalProduct,
-                totalPages: Math.max(1, totalPages),
-            });
-
-        } catch (err) {
-            console.error("PRODUCT LOAD ERROR:", err);
-
-            setError(
-                err?.response?.data?.message ||
-                err?.message ||
+        if (!response?.success) {
+            throw new Error(
+                response?.message ||
                 "Failed to load products."
             );
-
-            setProducts([]);
-
-            setPagination({
-                page: currentPage,
-                limit: PAGE_SIZE,
-                totalProduct: 0,
-                totalPages: 1,
-            });
-        } finally {
-            setLoading(false);
         }
+
+        const productList = Array.isArray(response.data)
+            ? response.data
+            : [];
+
+        const paginationData = response.pagination || {};
+
+        setProducts(productList);
+
+        setPagination({
+            page:
+                Number(paginationData.page) ||
+                currentPage,
+
+            limit:
+                Number(paginationData.limit) ||
+                PAGE_SIZE,
+
+            totalProduct:
+                Number(paginationData.totalProduct) || 0,
+
+            totalPages:
+                Number(paginationData.totalPages) || 1,
+        });
+
+    } catch (err) {
+        console.error("PRODUCT LOAD ERROR:", err);
+
+        setError(
+            err?.message ||
+            "Failed to load products."
+        );
+
+        setProducts([]);
+
+        setPagination({
+            page: currentPage,
+            limit: PAGE_SIZE,
+            totalProduct: 0,
+            totalPages: 1,
+        });
+
+    } finally {
+        setLoading(false);
     }
+}
 
     // ============================================================
     // INITIAL LOAD
