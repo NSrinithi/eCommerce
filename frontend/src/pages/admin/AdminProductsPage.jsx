@@ -66,57 +66,78 @@ export function AdminProductsPage() {
                 PAGE_SIZE
             );
 
-            console.log("PRODUCT RESPONSE:", response);
+            console.log("PRODUCT API RESPONSE:", response);
 
             /*
-              Expected response:
+             * Your backend response:
+             *
+             * {
+             *   success: true,
+             *   data: [...10 products...],
+             *   pagination: {
+             *      page: 1,
+             *      limit: 10,
+             *      totalProduct: 16,
+             *      totalPages: 2
+             *   }
+             * }
+             */
 
-              {
-                success: true,
-                data: [...],
-                pagination: {
-                  page: 1,
-                  limit: 10,
-                  totalProduct: 16,
-                  totalPages: 2
-                }
-              }
-            */
+            // ---------------------------------------------------------
+            // Normalize API response
+            // ---------------------------------------------------------
 
             const payload =
-                response?.data?.success !== undefined
+                response?.data?.success === true
                     ? response.data
                     : response;
 
+            // ---------------------------------------------------------
+            // Products
+            // ---------------------------------------------------------
+
             const productList = Array.isArray(payload?.data)
                 ? payload.data
-                : Array.isArray(payload)
-                    ? payload
-                    : [];
+                : [];
 
-            const paginationData =
-                payload?.pagination ||
-                response?.pagination ||
-                response?.data?.pagination ||
-                {
-                    page: currentPage,
-                    limit: PAGE_SIZE,
-                    totalProduct: productList.length,
-                    totalPages: 1,
-                };
+            // ---------------------------------------------------------
+            // Pagination
+            // ---------------------------------------------------------
+
+            const paginationData = payload?.pagination || {
+                page: currentPage,
+                limit: PAGE_SIZE,
+                totalProduct: 0,
+                totalPages: 1,
+            };
+
+            console.log("PRODUCT LIST:", productList);
+            console.log("PAGINATION:", paginationData);
+
+            // ---------------------------------------------------------
+            // Set products
+            // ---------------------------------------------------------
 
             setProducts(productList);
 
+            // ---------------------------------------------------------
+            // Set pagination
+            // ---------------------------------------------------------
+
             setPagination({
                 page: Number(paginationData.page) || currentPage,
-                limit: Number(paginationData.limit) || PAGE_SIZE,
+
+                limit:
+                    Number(paginationData.limit) ||
+                    PAGE_SIZE,
+
                 totalProduct:
-                    Number(paginationData.totalProduct) ||
-                    Number(paginationData.total) ||
-                    productList.length,
+                    Number(paginationData.totalProduct) || 0,
+
                 totalPages:
                     Number(paginationData.totalPages) || 1,
             });
+
         } catch (err) {
             console.error("PRODUCT LOAD ERROR:", err);
 
@@ -125,6 +146,14 @@ export function AdminProductsPage() {
             );
 
             setProducts([]);
+
+            setPagination({
+                page: currentPage,
+                limit: PAGE_SIZE,
+                totalProduct: 0,
+                totalPages: 1,
+            });
+
         } finally {
             setLoading(false);
         }
@@ -715,11 +744,10 @@ export function AdminProductsPage() {
                                     key={pageNumber}
                                     type="button"
                                     disabled={loading}
-                                    className={`pagination-number ${
-                                        pageNumber === page
+                                    className={`pagination-number ${pageNumber === page
                                             ? "active"
                                             : ""
-                                    }`}
+                                        }`}
                                     onClick={() =>
                                         changePage(pageNumber)
                                     }
