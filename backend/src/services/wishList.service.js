@@ -1,19 +1,26 @@
 import { WishList } from "../models/WishList.js";
 import { Product } from "../models/Product.js";
 
-export async function addWishList( userId,productId) {
+export async function addWishList(userId, productId) {
     const product = await Product.findById(productId);
-    const wishList = WishList.create(
+    if (!product) {
+        throw new Error("Product not found");
+    }
+
+    // Find wishlist and add product
+    const wishList = await WishList.findOneAndUpdate(
         { user: userId },
         {
             $addToSet: {
-                products: product
+                products: productId
             }
-        }, {
-        new: true,
-        upsert: true
-    }
+        },
+        {
+            new: true,
+            upsert: true
+        }
     ).populate("products");
+
     return wishList;
 }
 
@@ -26,7 +33,7 @@ export async function getWishList(userId) {
 }
 
 
-export async function removeWishList(userId,productId) {
+export async function removeWishList(userId, productId) {
     const wishlist = await WishList.findOneAndUpdate(
         { user: userId },
         {
