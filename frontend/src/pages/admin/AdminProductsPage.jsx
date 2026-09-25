@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { adminApi } from "../../services/adminApi.js";
 import { LoadingScreen } from "../../components/ui/LoadingScreen.jsx";
 import { Alert } from "../../components/ui/Alert.jsx";
-import "./AdminProductsPage.css";
 
 const PAGE_SIZE = 10;
 
