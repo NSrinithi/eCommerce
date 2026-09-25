@@ -449,12 +449,12 @@ export function ProductsPage() {
                                                 </span>
                                             )}
 
-                                            {/* Wishlist */}
                                             <button
                                                 type="button"
                                                 className="wishlist-button"
-                                                onClick={(e) => e.stopPropagation()}
-                                                aria-label="Add to wishlist"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                }}
                                             >
                                                 ♡
                                             </button>

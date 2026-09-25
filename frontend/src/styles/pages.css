@@ -5252,29 +5252,43 @@
 
 }
 .product-image-wrap {
-    position: relative;
+  position: relative;
 }
 
 .wishlist-button {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 38px;
-    height: 38px;
-    border: none;
-    border-radius: 50%;
-    background: white;
-    color: #333;
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 5;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  width: 38px;
+  height: 38px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: white;
+  color: #333;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+  z-index: 5;
+
+  transition: all 0.2s ease;
 }
 
 .wishlist-button:hover {
-    color: red;
-    transform: scale(1.05);
+  transform: scale(1.08);
+}
+
+.wishlist-button.active {
+  color: #e53935;
 }
