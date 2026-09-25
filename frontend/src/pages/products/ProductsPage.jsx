@@ -135,16 +135,22 @@ export function ProductsPage() {
     const [appliedFilters, setAppliedFilters] = useState(null);
 
     async function toggleWishlist(productId) {
-        const isAlreadyWishlisted = wishlist.includes(productId);
+
+        const isAlreadyWishlisted =
+            wishlist.includes(productId);
 
         try {
+
             if (isAlreadyWishlisted) {
+
                 await wishListApi.remove(productId);
 
                 setWishlist((prev) =>
                     prev.filter((id) => id !== productId)
                 );
+
             } else {
+
                 await wishListApi.add(productId);
 
                 setWishlist((prev) => [
@@ -152,11 +158,14 @@ export function ProductsPage() {
                     productId
                 ]);
             }
+
         } catch (error) {
+
             console.error(
                 "Wishlist update failed:",
                 error
             );
+
         }
     }
 

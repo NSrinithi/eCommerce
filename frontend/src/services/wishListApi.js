@@ -3,7 +3,9 @@ import { api } from "../lib/api";
 export const wishListApi={
     add:(productId)=>api('/wishList',{
         method:"POST",
-        data:productId
+        data:{
+            productId:productId
+        }
     }),
     get:()=>api('/wishList'),
     remove:(productId)=>api(`/wishList/${productId}`,{
