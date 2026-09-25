@@ -121,6 +121,7 @@ export function ProductsPage() {
     const [error, setError] = useState(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [added, setAdded] = useState(null);
+    const [wishlist, setWishlist] = useState({});
 
     // filter inputs (what the user is typing/choosing)
     const [search, setSearch] = useState("");
@@ -441,14 +442,31 @@ export function ProductsPage() {
                                 return (
                                     <div className="product-card" key={product._id}>
                                         <div className="product-image-wrap">
+
                                             {discount > 0 && (
-                                                <span className="product-badge">{discount}% OFF</span>
+                                                <span className="product-badge">
+                                                    {discount}% OFF
+                                                </span>
                                             )}
+
+                                            {/* Wishlist */}
+                                            <button
+                                                type="button"
+                                                className="wishlist-button"
+                                                onClick={(e) => e.stopPropagation()}
+                                                aria-label="Add to wishlist"
+                                            >
+                                                ♡
+                                            </button>
+
                                             <img
-                                                src={product.images?.[0] || FALLBACK_IMAGE}
+                                                src={
+                                                    product.images?.[0] ||
+                                                    FALLBACK_IMAGE
+                                                }
                                                 alt={product.name}
-                                                loading="lazy"
                                             />
+
                                         </div>
 
                                         <p className="product-brand">{product.brand}</p>

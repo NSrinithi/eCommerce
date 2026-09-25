@@ -10,7 +10,7 @@ export function AdminProductsPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [wishlist, setWishlist] = useState({});
+    
 
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All");
@@ -532,29 +532,10 @@ export function AdminProductsPage() {
 
                                             <div className="modern-product-info">
 
-                                                <div className="product-image-wrap">
-
-                                                    {discount > 0 && (
-                                                        <span className="product-badge">
-                                                            {discount}% OFF
-                                                        </span>
-                                                    )}
-
-                                                    {/* Wishlist */}
-                                                    <button
-                                                        type="button"
-                                                        className="wishlist-button"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        aria-label="Add to wishlist"
-                                                    >
-                                                        ♡
-                                                    </button>
+                                                <div className="product-image-wrapper">
 
                                                     <img
-                                                        src={
-                                                            product.images?.[0] ||
-                                                            FALLBACK_IMAGE
-                                                        }
+                                                        src={image}
                                                         alt={product.name}
                                                     />
 
