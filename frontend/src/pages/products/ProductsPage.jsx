@@ -121,7 +121,7 @@ export function ProductsPage() {
     const [error, setError] = useState(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [added, setAdded] = useState(null);
-    const [wishlist, setWishlist] = useState({});
+    const [wishlist, setWishlist] = useState([]);
 
     // filter inputs (what the user is typing/choosing)
     const [search, setSearch] = useState("");
@@ -132,6 +132,16 @@ export function ProductsPage() {
 
     // filters actually sent to the API
     const [appliedFilters, setAppliedFilters] = useState(null);
+
+    const toggleWishlist = (productId) => {
+        setWishlist((prev) => {
+            if (prev.includes(productId)) {
+                return prev.filter((id) => id !== productId);
+            }
+
+            return [...prev, productId];
+        });
+    };
 
     function applyFilters(overrides = {}) {
         setPage(1);
@@ -451,12 +461,12 @@ export function ProductsPage() {
 
                                             <button
                                                 type="button"
-                                                className={`wishlist-button ${wishlist ? "active" : ""
+                                                className={`wishlist-button ${wishlist.includes(product._id) ? "active" : ""
                                                     }`}
-                                                onClick={() => setWishlist(!wishlist)}
+                                                onClick={() => toggleWishlist(product._id)}
                                                 aria-label="Add to wishlist"
                                             >
-                                                {wishlist ? "♥" : "♡"}
+                                                {wishlist.includes(product._id) ? "♥" : "♡"}
                                             </button>
 
                                             <img
