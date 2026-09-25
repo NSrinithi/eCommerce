@@ -1,639 +1,757 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
-import { adminApi } from "../../services/adminApi";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { adminApi } from "../../services/adminApi.js";
+import { LoadingScreen } from "../../components/ui/LoadingScreen.jsx";
+import { Alert } from "../../components/ui/Alert.jsx";
 
-export function AdminProductsPage(){
-  const navigate = useNavigate();
+const PAGE_SIZE = 10;
 
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState(null);
-  const [error, setError] = useState("");
+function formatCurrency(value) {
+    return `₹${Number(value || 0).toLocaleString("en-IN")}`;
+}
 
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    totalProduct: 0,
-    totalPages: 1,
-  });
-
-  // ----------------------------------------
-  // FETCH PRODUCTS
-  // ----------------------------------------
-
-  const fetchProducts = async (page = 1) => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await adminApi.getProducts(page, 10);
-
-      if (response?.success) {
-        setProducts(response.data || []);
-
-        setPagination({
-          page: response.pagination?.page || page,
-          limit: response.pagination?.limit || 10,
-          totalProduct: response.pagination?.totalProduct || 0,
-          totalPages: response.pagination?.totalPages || 1,
-        });
-      } else {
-        setProducts([]);
-        setError("Unable to load products.");
-      }
-    } catch (err) {
-      console.error("Failed to fetch products:", err);
-      setProducts([]);
-      setError(
-        err?.message || "Something went wrong while loading products."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ----------------------------------------
-  // INITIAL LOAD
-  // ----------------------------------------
-
-  useEffect(() => {
-    fetchProducts(1);
-  }, []);
-
-  // ----------------------------------------
-  // PAGINATION
-  // ----------------------------------------
-
-  const handlePageChange = (page) => {
-    if (page < 1 || page > pagination.totalPages) return;
-
-    fetchProducts(page);
-
-    // Scroll to top of product table
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
-
-  // ----------------------------------------
-  // DELETE PRODUCT
-  // ----------------------------------------
-
-  const handleDelete = async (id, name) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${name}"?`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      setDeleting(id);
-
-      await adminApi.deleteProduct(id);
-
-      // If deleting the last item on a page,
-      // go back one page.
-      if (products.length === 1 && pagination.page > 1) {
-        await fetchProducts(pagination.page - 1);
-      } else {
-        await fetchProducts(pagination.page);
-      }
-    } catch (err) {
-      console.error("Delete failed:", err);
-      alert(err?.message || "Failed to delete product.");
-    } finally {
-      setDeleting(null);
-    }
-  };
-
-  // ----------------------------------------
-  // DISCOUNT
-  // ----------------------------------------
-
-  const getDiscountPercentage = (price, discountPrice) => {
-    if (!price || !discountPrice || discountPrice >= price) {
-      return 0;
-    }
-
-    return Math.round(((price - discountPrice) / price) * 100);
-  };
-
-  // ----------------------------------------
-  // STOCK STATUS
-  // ----------------------------------------
-
-  const getStockStatus = (stock) => {
+function getStockStatus(stock) {
     if (stock === 0) {
-      return {
-        text: "Out of stock",
-        className: "stock-out",
-      };
+        return {
+            label: "Out of stock",
+            className: "out",
+        };
+    }
+
+    if (stock <= 5) {
+        return {
+            label: "Critical",
+            className: "critical",
+        };
     }
 
     if (stock <= 10) {
-      return {
-        text: "Low stock",
-        className: "stock-low",
-      };
+        return {
+            label: "Low stock",
+            className: "low",
+        };
     }
 
     return {
-      text: "In stock",
-      className: "stock-good",
+        label: "In stock",
+        className: "good",
     };
-  };
+}
 
-  // ----------------------------------------
-  // FORMAT PRICE
-  // ----------------------------------------
+export function AdminProductsPage() {
+    const [products, setProducts] = useState([]);
+    const [page, setPage] = useState(1);
 
-  const formatPrice = (price) => {
-    return `₹${Number(price || 0).toLocaleString("en-IN")}`;
-  };
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: PAGE_SIZE,
+        totalProduct: 0,
+        totalPages: 1,
+    });
 
-  // ----------------------------------------
-  // LOADING
-  // ----------------------------------------
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-  if (loading && products.length === 0) {
+    // =========================================================
+    // LOAD PRODUCTS
+    // =========================================================
+
+    async function loadProducts(currentPage = 1) {
+        try {
+            setLoading(true);
+            setError("");
+
+            const response = await adminApi.getProducts(
+                currentPage,
+                PAGE_SIZE
+            );
+
+            console.log("PRODUCT RESPONSE:", response);
+
+            /*
+              Expected response:
+
+              {
+                success: true,
+                data: [...],
+                pagination: {
+                  page: 1,
+                  limit: 10,
+                  totalProduct: 16,
+                  totalPages: 2
+                }
+              }
+            */
+
+            const payload =
+                response?.data?.success !== undefined
+                    ? response.data
+                    : response;
+
+            const productList = Array.isArray(payload?.data)
+                ? payload.data
+                : Array.isArray(payload)
+                    ? payload
+                    : [];
+
+            const paginationData =
+                payload?.pagination ||
+                response?.pagination ||
+                response?.data?.pagination ||
+                {
+                    page: currentPage,
+                    limit: PAGE_SIZE,
+                    totalProduct: productList.length,
+                    totalPages: 1,
+                };
+
+            setProducts(productList);
+
+            setPagination({
+                page: Number(paginationData.page) || currentPage,
+                limit: Number(paginationData.limit) || PAGE_SIZE,
+                totalProduct:
+                    Number(paginationData.totalProduct) ||
+                    Number(paginationData.total) ||
+                    productList.length,
+                totalPages:
+                    Number(paginationData.totalPages) || 1,
+            });
+        } catch (err) {
+            console.error("PRODUCT LOAD ERROR:", err);
+
+            setError(
+                err?.message || "Failed to load products."
+            );
+
+            setProducts([]);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // =========================================================
+    // INITIAL LOAD
+    // =========================================================
+
+    useEffect(() => {
+        loadProducts(page);
+    }, [page]);
+
+    // =========================================================
+    // DELETE
+    // =========================================================
+
+    async function handleDelete(productId, productName) {
+        const confirmed = window.confirm(
+            `Are you sure you want to delete "${productName}"?`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            setError("");
+
+            await adminApi.deleteProduct(productId);
+
+            // If deleting the only item on page 2,
+            // move back to page 1.
+            if (products.length === 1 && page > 1) {
+                setPage((current) => current - 1);
+                return;
+            }
+
+            await loadProducts(page);
+        } catch (err) {
+            console.error("DELETE ERROR:", err);
+
+            setError(
+                err?.message || "Failed to delete product."
+            );
+        }
+    }
+
+    // =========================================================
+    // REFRESH
+    // =========================================================
+
+    async function refreshProducts() {
+        await loadProducts(page);
+    }
+
+    // =========================================================
+    // PAGE CHANGE
+    // =========================================================
+
+    function changePage(newPage) {
+        if (newPage < 1) return;
+
+        if (newPage > pagination.totalPages) return;
+
+        if (newPage === page) return;
+
+        setPage(newPage);
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }
+
+    // =========================================================
+    // LOADING
+    // =========================================================
+
+    if (loading && products.length === 0) {
+        return <LoadingScreen />;
+    }
+
+    // =========================================================
+    // RENDER
+    // =========================================================
+
     return (
-      <div className="admin-products-page">
-        <div className="products-card">
-          <div className="products-loading">
-            <div className="loading-spinner"></div>
-            <p>Loading products...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+        <main className="products-page">
 
-  // ----------------------------------------
-  // PAGE
-  // ----------------------------------------
+            {/* =====================================================
+                PAGE HEADER
+            ====================================================== */}
 
-  return (
-    <div className="admin-products-page">
+            <section className="products-header">
 
-      {/* ======================================
-          PAGE HEADER
-      ====================================== */}
+                <div>
+                    <div className="products-eyebrow">
+                        CATALOG MANAGEMENT
+                    </div>
 
-      <div className="products-page-header">
-        <div>
-          <h1>Products</h1>
-          <p>
-            Manage your products, inventory and pricing.
-          </p>
-        </div>
+                    <h1>Products</h1>
 
-        <button
-          className="add-product-button"
-          onClick={() => navigate("/admin/products/add")}
-        >
-          <span>＋</span>
-          Add Product
-        </button>
-      </div>
+                    <p>
+                        Manage your products, inventory and pricing
+                        from one place.
+                    </p>
+                </div>
 
-      {/* ======================================
-          ERROR
-      ====================================== */}
+                <div className="products-header-actions">
 
-      {error && (
-        <div className="products-error">
-          <span>⚠</span>
-          <span>{error}</span>
-
-          <button onClick={() => fetchProducts(pagination.page)}>
-            Try again
-          </button>
-        </div>
-      )}
-
-      {/* ======================================
-          PRODUCT CARD
-      ====================================== */}
-
-      <div className="products-card">
-
-        {/* --------------------------------------
-            CARD HEADER
-        -------------------------------------- */}
-
-        <div className="products-card-header">
-
-          <div>
-            <h2>Product Catalog</h2>
-            <p>
-              View and manage all products in your store.
-            </p>
-          </div>
-
-          <div className="catalog-summary">
-            <span>
-              {pagination.totalProduct}{" "}
-              {pagination.totalProduct === 1
-                ? "product"
-                : "products"}
-            </span>
-          </div>
-
-        </div>
-
-        {/* --------------------------------------
-            TABLE
-        -------------------------------------- */}
-
-        {products.length > 0 ? (
-          <div className="product-table-container">
-
-            <table className="product-table">
-
-              <thead>
-                <tr>
-                  <th className="product-header">
-                    PRODUCT
-                  </th>
-
-                  <th>
-                    CATEGORY
-                  </th>
-
-                  <th>
-                    PRICE
-                  </th>
-
-                  <th>
-                    STOCK
-                  </th>
-
-                  <th>
-                    RATING
-                  </th>
-
-                  <th className="actions-header">
-                    ACTIONS
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-
-                {products.map((product) => {
-
-                  const discount =
-                    getDiscountPercentage(
-                      product.price,
-                      product.discountPrice
-                    );
-
-                  const stockStatus =
-                    getStockStatus(product.stock);
-
-                  return (
-                    <tr key={product._id}>
-
-                      {/* ==============================
-                          PRODUCT
-                      ============================== */}
-
-                      <td>
-
-                        <div className="product-cell">
-
-                          <div className="product-image-container">
-
-                            {product.images?.[0] ? (
-                              <img
-                                src={product.images[0]}
-                                alt={product.name}
-                                className="product-image"
-                              />
-                            ) : (
-                              <div className="no-product-image">
-                                🛍️
-                              </div>
-                            )}
-
-                          </div>
-
-                          <div className="product-information">
-
-                            <div
-                              className="product-name"
-                              title={product.name}
-                            >
-                              {product.name}
-                            </div>
-
-                            <div className="product-brand">
-                              {product.brand}
-                            </div>
-
-                            <div className="product-sku">
-                              SKU #
-                              {product._id
-                                ?.slice(-6)
-                                .toUpperCase()}
-                            </div>
-
-                          </div>
-
-                        </div>
-
-                      </td>
-
-                      {/* ==============================
-                          CATEGORY
-                      ============================== */}
-
-                      <td>
-
-                        <span className="category-badge">
-                          {product.category}
+                    <button
+                        type="button"
+                        className="products-refresh-btn"
+                        onClick={refreshProducts}
+                        disabled={loading}
+                    >
+                        <span className="refresh-icon">
+                            ↻
                         </span>
 
-                      </td>
+                        {loading ? "Refreshing..." : "Refresh"}
+                    </button>
 
-                      {/* ==============================
-                          PRICE
-                      ============================== */}
+                    <Link
+                        to="/admin/products/new"
+                        className="products-add-btn"
+                    >
+                        <span>+</span>
+                        Add Product
+                    </Link>
 
-                      <td>
+                </div>
 
-                        <div className="price-cell">
+            </section>
 
-                          <div className="discount-price">
-                            {formatPrice(
-                              product.discountPrice
-                            )}
-                          </div>
 
-                          {product.price !==
-                            product.discountPrice && (
-                            <div className="original-price">
-                              {formatPrice(
-                                product.price
-                              )}
-                            </div>
-                          )}
+            {/* =====================================================
+                ERROR
+            ====================================================== */}
 
-                          {discount > 0 && (
-                            <span className="discount-badge">
-                              {discount}% OFF
-                            </span>
-                          )}
+            {error && (
+                <div className="products-error">
+                    <Alert>{error}</Alert>
+                </div>
+            )}
 
+
+            {/* =====================================================
+                SUMMARY CARDS
+            ====================================================== */}
+
+            <section className="products-stats">
+
+                <div className="products-stat-card">
+
+                    <div className="stat-icon stat-icon-products">
+                        📦
+                    </div>
+
+                    <div>
+                        <span>Total Products</span>
+
+                        <strong>
+                            {pagination.totalProduct}
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div className="products-stat-card">
+
+                    <div className="stat-icon stat-icon-page">
+                        ◫
+                    </div>
+
+                    <div>
+                        <span>Current Page</span>
+
+                        <strong>
+                            {page}
+                            <small>
+                                {" "} / {pagination.totalPages}
+                            </small>
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div className="products-stat-card">
+
+                    <div className="stat-icon stat-icon-showing">
+                        👁
+                    </div>
+
+                    <div>
+                        <span>Showing</span>
+
+                        <strong>
+                            {products.length}
+                        </strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            {/* =====================================================
+                CATALOG PANEL
+            ====================================================== */}
+
+            <section className="products-panel">
+
+                <div className="products-panel-header">
+
+                    <div>
+                        <h2>Product Catalog</h2>
+
+                        <p>
+                            View and manage all products in your store.
+                        </p>
+                    </div>
+
+                    <div className="catalog-count">
+                        {pagination.totalProduct} products
+                    </div>
+
+                </div>
+
+
+                {/* =================================================
+                    TABLE
+                ================================================== */}
+
+                {!loading && products.length === 0 ? (
+
+                    <div className="products-empty">
+
+                        <div className="empty-icon">
+                            📦
                         </div>
 
-                      </td>
+                        <h3>No products found</h3>
 
-                      {/* ==============================
-                          STOCK
-                      ============================== */}
+                        <p>
+                            Add your first product to start building
+                            your catalog.
+                        </p>
 
-                      <td>
+                        <Link
+                            to="/admin/products/new"
+                            className="products-add-btn"
+                        >
+                            + Add Product
+                        </Link>
 
-                        <div className="stock-cell">
+                    </div>
 
-                          <div className="stock-number">
-                            {product.stock}{" "}
-                            <span>units</span>
-                          </div>
+                ) : (
 
-                          <span
-                            className={`stock-badge ${stockStatus.className}`}
-                          >
-                            <span className="stock-dot"></span>
-                            {stockStatus.text}
-                          </span>
+                    <div className="products-table-container">
 
-                        </div>
+                        <table className="products-table">
 
-                      </td>
+                            <thead>
 
-                      {/* ==============================
-                          RATING
-                      ============================== */}
+                                <tr>
+                                    <th>PRODUCT</th>
+                                    <th>CATEGORY</th>
+                                    <th>PRICE</th>
+                                    <th>STOCK</th>
+                                    <th>RATING</th>
+                                    <th>STATUS</th>
+                                    <th className="actions-heading">
+                                        ACTIONS
+                                    </th>
+                                </tr>
 
-                      <td>
+                            </thead>
 
-                        <div className="rating-cell">
 
-                          <div className="rating-value">
-                            <span className="star">
-                              ★
-                            </span>
+                            <tbody>
 
-                            <span>
-                              {Number(
-                                product.rating || 0
-                              ).toFixed(1)}
-                            </span>
-                          </div>
+                                {products.map((product) => {
 
-                          <div className="review-count">
-                            (
-                            {Number(
-                              product.numReviews || 0
-                            ).toLocaleString("en-IN")}
-                            )
-                          </div>
+                                    const price =
+                                        Number(product.price || 0);
 
-                        </div>
+                                    const discountPrice =
+                                        Number(
+                                            product.discountPrice ??
+                                            product.price ??
+                                            0
+                                        );
 
-                      </td>
+                                    const stock =
+                                        Number(product.stock || 0);
 
-                      {/* ==============================
-                          ACTIONS
-                      ============================== */}
+                                    const rating =
+                                        Number(product.rating || 0);
 
-                      <td>
+                                    const discount =
+                                        price > discountPrice
+                                            ? Math.round(
+                                                ((price - discountPrice) /
+                                                    price) *
+                                                100
+                                            )
+                                            : 0;
 
-                        <div className="product-actions">
+                                    const stockStatus =
+                                        getStockStatus(stock);
 
-                          <button
-                            className="action-button edit-button"
-                            title="Edit product"
-                            onClick={() =>
-                              navigate(
-                                `/admin/edit/${product._id}`
-                              )
-                            }
-                          >
-                            ✎
-                          </button>
+                                    return (
 
-                          <button
-                            className="action-button delete-button"
-                            title="Delete product"
-                            disabled={
-                              deleting === product._id
-                            }
-                            onClick={() =>
-                              handleDelete(
-                                product._id,
-                                product.name
-                              )
-                            }
-                          >
-                            {deleting === product._id
-                              ? "..."
-                              : "🗑"}
-                          </button>
+                                        <tr
+                                            key={product._id}
+                                            className="product-row"
+                                        >
 
-                        </div>
+                                            {/* PRODUCT */}
 
-                      </td>
+                                            <td>
 
-                    </tr>
-                  );
-                })}
+                                                <div className="product-info">
 
-              </tbody>
+                                                    <div className="product-image-wrapper">
 
-            </table>
+                                                        {product.images?.[0] ? (
 
-          </div>
-        ) : (
+                                                            <img
+                                                                src={
+                                                                    product.images[0]
+                                                                }
+                                                                alt={
+                                                                    product.name
+                                                                }
+                                                                className="product-image"
+                                                            />
 
-          /* ======================================
-             EMPTY STATE
-          ====================================== */
+                                                        ) : (
 
-          <div className="empty-products">
+                                                            <div className="product-no-image">
+                                                                📦
+                                                            </div>
 
-            <div className="empty-icon">
-              🛍️
-            </div>
+                                                        )}
 
-            <h3>No products found</h3>
+                                                    </div>
 
-            <p>
-              Add your first product to get started.
-            </p>
 
-            <button
-              className="empty-add-button"
-              onClick={() =>
-                navigate("/admin/products/add")
-              }
-            >
-              + Add Product
-            </button>
+                                                    <div className="product-details">
 
-          </div>
-        )}
+                                                        <strong>
+                                                            {product.name}
+                                                        </strong>
 
-        {/* ======================================
-            PAGINATION
-        ====================================== */}
+                                                        <span className="product-brand">
+                                                            {product.brand ||
+                                                                "No brand"}
+                                                        </span>
 
-        {pagination.totalPages > 1 && (
-          <div className="pagination-container">
+                                                        <span className="product-sku">
+                                                            SKU #
+                                                            {product._id
+                                                                ?.slice(-6)
+                                                                .toUpperCase()}
+                                                        </span>
 
-            <div className="pagination-info">
-              Showing{" "}
-              <strong>
-                {(pagination.page - 1) *
-                  pagination.limit +
-                  1}
-              </strong>{" "}
-              -
-              <strong>
-                {" "}
-                {Math.min(
-                  pagination.page *
-                    pagination.limit,
-                  pagination.totalProduct
+                                                    </div>
+
+                                                </div>
+
+                                            </td>
+
+
+                                            {/* CATEGORY */}
+
+                                            <td>
+
+                                                <span className="category-badge">
+                                                    {product.category ||
+                                                        "Uncategorized"}
+                                                </span>
+
+                                            </td>
+
+
+                                            {/* PRICE */}
+
+                                            <td>
+
+                                                <div className="price-info">
+
+                                                    <strong>
+                                                        {formatCurrency(
+                                                            discountPrice
+                                                        )}
+                                                    </strong>
+
+                                                    {discount > 0 && (
+
+                                                        <div className="price-extra">
+
+                                                            <span className="old-price">
+                                                                {formatCurrency(
+                                                                    price
+                                                                )}
+                                                            </span>
+
+                                                            <span className="discount-badge">
+                                                                {discount}% OFF
+                                                            </span>
+
+                                                        </div>
+
+                                                    )}
+
+                                                </div>
+
+                                            </td>
+
+
+                                            {/* STOCK */}
+
+                                            <td>
+
+                                                <div className="stock-info">
+
+                                                    <strong>
+                                                        {stock}
+                                                    </strong>
+
+                                                    <span>
+                                                        units
+                                                    </span>
+
+                                                </div>
+
+                                            </td>
+
+
+                                            {/* RATING */}
+
+                                            <td>
+
+                                                <div className="rating-info">
+
+                                                    <span className="rating-star">
+                                                        ★
+                                                    </span>
+
+                                                    <strong>
+                                                        {rating.toFixed(1)}
+                                                    </strong>
+
+                                                    <span className="review-count">
+                                                        ({Number(
+                                                            product.numReviews || 0
+                                                        ).toLocaleString("en-IN")})
+                                                    </span>
+
+                                                </div>
+
+                                            </td>
+
+
+                                            {/* STATUS */}
+
+                                            <td>
+
+                                                <span
+                                                    className={`status-badge status-${stockStatus.className}`}
+                                                >
+                                                    <span className="status-dot">
+                                                        ●
+                                                    </span>
+
+                                                    {stockStatus.label}
+                                                </span>
+
+                                            </td>
+
+
+                                            {/* ACTIONS */}
+
+                                            <td>
+
+                                                <div className="product-actions">
+
+                                                    <Link
+                                                        to={`/admin/edit/${product._id}`}
+                                                        className="action-btn edit-action"
+                                                        title="Edit product"
+                                                    >
+                                                        ✎
+                                                    </Link>
+
+                                                    <button
+                                                        type="button"
+                                                        className="action-btn delete-action"
+                                                        title="Delete product"
+                                                        onClick={() =>
+                                                            handleDelete(
+                                                                product._id,
+                                                                product.name
+                                                            )
+                                                        }
+                                                    >
+                                                        🗑
+                                                    </button>
+
+                                                </div>
+
+                                            </td>
+
+                                        </tr>
+
+                                    );
+                                })}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
                 )}
-              </strong>{" "}
-              of{" "}
-              <strong>
-                {pagination.totalProduct}
-              </strong>{" "}
-              products
-            </div>
 
-            <div className="pagination-controls">
 
-              {/* PREVIOUS */}
+                {/* =================================================
+                    PAGINATION
+                ================================================== */}
 
-              <button
-                className="pagination-button previous"
-                disabled={pagination.page === 1}
-                onClick={() =>
-                  handlePageChange(
-                    pagination.page - 1
-                  )
-                }
-              >
-                ←
-                <span>Previous</span>
-              </button>
+                {pagination.totalPages > 1 && (
 
-              {/* PAGE NUMBERS */}
+                    <div className="products-pagination">
 
-              <div className="page-numbers">
+                        <div className="pagination-summary">
 
-                {Array.from(
-                  {
-                    length:
-                      pagination.totalPages,
-                  },
-                  (_, index) => index + 1
-                ).map((pageNumber) => (
+                            Showing{" "}
 
-                  <button
-                    key={pageNumber}
-                    className={`page-number ${
-                      pagination.page ===
-                      pageNumber
-                        ? "active"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      handlePageChange(
-                        pageNumber
-                      )
-                    }
-                  >
-                    {pageNumber}
-                  </button>
+                            <strong>
+                                {((page - 1) * PAGE_SIZE) + 1}
+                            </strong>
 
-                ))}
+                            {" - "}
 
-              </div>
+                            <strong>
+                                {Math.min(
+                                    page * PAGE_SIZE,
+                                    pagination.totalProduct
+                                )}
+                            </strong>
 
-              {/* NEXT */}
+                            {" of "}
 
-              <button
-                className="pagination-button next"
-                disabled={
-                  pagination.page ===
-                  pagination.totalPages
-                }
-                onClick={() =>
-                  handlePageChange(
-                    pagination.page + 1
-                  )
-                }
-              >
-                <span>Next</span>
-                →
-              </button>
+                            <strong>
+                                {pagination.totalProduct}
+                            </strong>
 
-            </div>
+                        </div>
 
-          </div>
-        )}
 
-      </div>
+                        <div className="pagination-controls">
 
-    </div>
-  );
-};
+                            <button
+                                type="button"
+                                className="pagination-arrow"
+                                disabled={page === 1 || loading}
+                                onClick={() =>
+                                    changePage(page - 1)
+                                }
+                            >
+                                ←
+                            </button>
 
-export default AdminProductsPage;
+
+                            {Array.from(
+                                {
+                                    length: pagination.totalPages,
+                                },
+                                (_, index) => index + 1
+                            ).map((pageNumber) => (
+
+                                <button
+                                    key={pageNumber}
+                                    type="button"
+                                    disabled={loading}
+                                    className={`pagination-number ${
+                                        pageNumber === page
+                                            ? "active"
+                                            : ""
+                                    }`}
+                                    onClick={() =>
+                                        changePage(pageNumber)
+                                    }
+                                >
+                                    {pageNumber}
+                                </button>
+
+                            ))}
+
+
+                            <button
+                                type="button"
+                                className="pagination-arrow"
+                                disabled={
+                                    page === pagination.totalPages ||
+                                    loading
+                                }
+                                onClick={() =>
+                                    changePage(page + 1)
+                                }
+                            >
+                                →
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                )}
+
+            </section>
+
+        </main>
+    );
+}
