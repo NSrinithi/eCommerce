@@ -73,12 +73,16 @@ export function Header({ onMenu }) {
             )}
           </span>
         </Link>
+        <Link to="/wishlist">
+          ❤️
+        </Link>
         <span className="header-divider" />
 
+
         <Link to="/profile">
-        <span className="avatar cursor-pointer" title={user.name}>
-          {Array.from(user.name)[0]?.toUpperCase()}
-        </span>
+          <span className="avatar cursor-pointer" title={user.name}>
+            {Array.from(user.name)[0]?.toUpperCase()}
+          </span>
         </Link>
 
         <button

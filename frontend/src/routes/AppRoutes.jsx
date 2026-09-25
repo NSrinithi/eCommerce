@@ -15,6 +15,7 @@ import { AddProductPage } from '../pages/admin/AddProductPage.jsx';
 import { AdminProductsPage } from '../pages/admin/AdminProductsPage.jsx';
 import { EditProductPage } from '../pages/admin/EditProductPage.jsx';
 import { AdminOrderPage } from '../pages/admin/AdminOrderPage.jsx';
+import { WishList } from '../../../backend/src/models/WishList.js';
 import { OrdersPage } from '../pages/orders/OrdersPage.jsx';
 import { CheckOutPage } from '../pages/checkout/CheckOutPage.jsx';
 import { NotFoundPage } from '../pages/NotFoundPage.jsx';
@@ -36,6 +37,7 @@ export function AppRoutes() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path='/orders' element={<OrdersPage/>}/>
+        <Route path='/wishList' element={<WishList/>}/>
         <Route path='/admin/dashboard' element={<RequiredRole role="ADMIN"><AdminDashboardPage/></RequiredRole>}/>
         <Route path='/admin/products' element={<RequiredRole role="ADMIN"><AdminProductsPage/></RequiredRole>}/>
         <Route path='/admin/add' element={<RequiredRole role="ADMIN"><AddProductPage/></RequiredRole>}/>
