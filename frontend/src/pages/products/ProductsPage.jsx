@@ -280,16 +280,27 @@ export function ProductsPage() {
             try {
                 const response = await wishListApi.get();
 
-                console.log("Wishlist response:", response);
+                console.log("FULL WISHLIST RESPONSE:", response);
+
+                // Handle both possible response structures
+                const wishlist =
+                    response?.data ||
+                    response;
 
                 const products =
-                    response?.data?.products ||
-                    response?.products ||
-                    [];
+                    wishlist?.products || [];
 
-                const productIds = products.map(
-                    (product) => product._id
-                );
+                const productIds = products.map((product) => {
+                    // If populate("products") worked
+                    if (typeof product === "object") {
+                        return product._id;
+                    }
+
+                    // If backend returned only ObjectIds
+                    return product;
+                });
+
+                console.log("Wishlist product IDs:", productIds);
 
                 setWishlist(productIds);
 
