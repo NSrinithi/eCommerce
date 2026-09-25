@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { adminApi } from "../../services/adminApi";
 
-const AdminProducts = () => {
+export function AdminProductsPage(){
   const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
@@ -636,4 +636,4 @@ const AdminProducts = () => {
   );
 };
 
-export default AdminProducts;
+export default AdminProductsPage;
