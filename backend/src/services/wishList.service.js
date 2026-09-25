@@ -28,7 +28,7 @@ export async function addWishList(userId, productId) {
 export async function getWishList(userId) {
     const wishlist = await WishList.findOne({
         user: userId
-    })
+    }).populate("products");
     return wishlist;
 }
 
