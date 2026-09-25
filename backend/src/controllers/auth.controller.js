@@ -14,6 +14,10 @@ export async function login(req, res) {
   return sendData(res, { user }, 200, 'Signed in.');
 }
 export function me(req, res) {
+  console.log("========== AUTH ME ==========");
+  console.log("USER:", req.user);
+  console.log("COOKIES:", req.cookies);
+  console.log("=============================");
   return sendData(res, { user: req.user });
 }
 export async function updateMe(req, res) {
