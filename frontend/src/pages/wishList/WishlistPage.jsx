@@ -167,21 +167,15 @@ export function WishlistPage() {
 
             {!error && products.length === 0 && (
 
-                <div className="wishlist-empty">
-
-                    <div className="wishlist-empty-heart">
+                <div className="cart-empty">
+                    <div className="cart-empty-icon">
                         ♡
                     </div>
-
-                    <h2>
-                        Your wishlist is empty
-                    </h2>
-
-                    <p className="muted">
-                        Save products you love and
-                        come back to them later.
-                    </p>
-
+                    <h2>Your Wishlist is empty</h2>
+                    <p>Looks like you haven’t added anything yet. Explore the store and find something you like.</p>
+                    <Link to="/products" className="button button--primary">
+                        Browse products
+                    </Link>
                 </div>
 
             )}
@@ -327,11 +321,10 @@ export function WishlistPage() {
                                     {/* BUTTON */}
 
                                     <button
-                                        className={`button button--primary ${
-                                            isAdded
+                                        className={`button button--primary ${isAdded
                                                 ? "is-added"
                                                 : ""
-                                        }`}
+                                            }`}
                                         onClick={() =>
                                             addToCart(
                                                 product._id

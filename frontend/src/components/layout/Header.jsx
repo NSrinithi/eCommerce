@@ -76,9 +76,6 @@ export function Header({ onMenu }) {
         <Link to="/wishlist">
           <i className="fa-regular fa-heart" style={{color: "rgb(0, 0, 0)"}}></i>
         </Link>
-        <span className="header-divider" />
-
-
         <Link to="/profile">
           <span className="avatar cursor-pointer" title={user.name}>
             {Array.from(user.name)[0]?.toUpperCase()}
