@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { productApi } from "../../services/productApi";
 import { cartApi } from "../../services/cartApi";
+import { wishListApi } from "../../services/wishListApi";
 
 const PAGE_SIZE = 9;
 
@@ -133,15 +134,31 @@ export function ProductsPage() {
     // filters actually sent to the API
     const [appliedFilters, setAppliedFilters] = useState(null);
 
-    const toggleWishlist = (productId) => {
-        setWishlist((prev) => {
-            if (prev.includes(productId)) {
-                return prev.filter((id) => id !== productId);
-            }
+    async function toggleWishlist(productId) {
+        const isAlreadyWishlisted = wishlist.includes(productId);
 
-            return [...prev, productId];
-        });
-    };
+        try {
+            if (isAlreadyWishlisted) {
+                await wishListApi.remove(productId);
+
+                setWishlist((prev) =>
+                    prev.filter((id) => id !== productId)
+                );
+            } else {
+                await wishListApi.add(productId);
+
+                setWishlist((prev) => [
+                    ...prev,
+                    productId
+                ]);
+            }
+        } catch (error) {
+            console.error(
+                "Wishlist update failed:",
+                error
+            );
+        }
+    }
 
     function applyFilters(overrides = {}) {
         setPage(1);
@@ -248,6 +265,35 @@ export function ProductsPage() {
             cancelled = true;
         };
     }, [page, appliedFilters, reloadKey]);
+
+    useEffect(() => {
+        async function loadWishlist() {
+            try {
+                const response = await wishListApi.get();
+
+                console.log("Wishlist response:", response);
+
+                const products =
+                    response?.data?.products ||
+                    response?.products ||
+                    [];
+
+                const productIds = products.map(
+                    (product) => product._id
+                );
+
+                setWishlist(productIds);
+
+            } catch (error) {
+                console.error(
+                    "Failed to load wishlist:",
+                    error
+                );
+            }
+        }
+
+        loadWishlist();
+    }, []);
 
     function goToPage(nextPage) {
         setPage(nextPage);

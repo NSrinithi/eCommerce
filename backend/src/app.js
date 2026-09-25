@@ -14,6 +14,7 @@ import exampleRoutes from './routes/example.routes.js';
 import paymentRoutes from "./routes/payment.routes.js";
 import cloudinaryRoutes from "./routes/cloudinary.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import wishListRoutes from "./routes/wishList.routes.js";
 import { requestLogger } from './middleware/requestLogger.js';
 import { browserSafety } from './middleware/browserSafety.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
@@ -58,6 +59,7 @@ export function createApp(config) {
   app.use('/api/examples', exampleRoutes);
   app.use('/api/products', productRoutes);
   app.use('/api/cart',cartRoutes);
+  app.use('/api/wishList',wishListRoutes);
   app.use("/api/admin",adminRoutes);
   app.use("/api/cloudinary",cloudinaryRoutes);
   app.use('/api/order',orderRoutes);
