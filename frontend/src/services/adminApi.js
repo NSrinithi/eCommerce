@@ -4,7 +4,9 @@ export const adminApi = {
     getDashboard: () => api('/admin/dashboard'),
 
     getProducts: (page = 1, limit = 10) =>
-        api(`/products?page=${page}&limit=${limit}`),
+        api(`/products?page=${page}&limit=${limit}`,{
+            returnFullResponse:true
+        }),
 
     addProduct: (formData) =>
         api("/products", {
