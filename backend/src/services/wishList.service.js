@@ -1,5 +1,5 @@
-import { WishList } from "../models/WishList";
-import { Product } from "../models/Product";
+import { WishList } from "../models/WishList.js";
+import { Product } from "../models/Product.js";
 
 export async function addWishList( userId,productId) {
     const product = await Product.findById(productId);

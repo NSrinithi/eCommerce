@@ -1,4 +1,4 @@
-import * as ws from "../services/wishList.service";
+import * as ws from "../services/wishList.service.js";
 
 export async function addWishList(req, res) {
     const userId = req.user.id;

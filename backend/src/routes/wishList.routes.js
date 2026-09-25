@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { addWishList,getWishList,removeWishList } from "../controllers/wishList.controller";
-import { requireAuth } from "../middleware/requireAuth";
+import { addWishList,getWishList,removeWishList } from "../controllers/wishList.controller.js";
+import { requireAuth } from "../middleware/requireAuth.js";
 
 const router=Router();
 
