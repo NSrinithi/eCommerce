@@ -456,7 +456,7 @@ export function ProductsPage() {
                                                 onClick={() => setWishlist(!wishlist)}
                                                 aria-label="Add to wishlist"
                                             >
-                                                {isWishlisted ? "♥" : "♡"}
+                                                {wishlist ? "♥" : "♡"}
                                             </button>
 
                                             <img
