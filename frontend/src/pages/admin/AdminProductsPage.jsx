@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { adminApi } from "../../api/adminApi";
-import "./AdminProducts.css";
+import { adminApi } from "../../services/adminApi";
 
 const AdminProducts = () => {
   const navigate = useNavigate();
