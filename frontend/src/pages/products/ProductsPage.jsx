@@ -451,12 +451,12 @@ export function ProductsPage() {
 
                                             <button
                                                 type="button"
-                                                className="wishlist-button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                }}
+                                                className={`wishlist-button ${wishlist ? "active" : ""
+                                                    }`}
+                                                onClick={() => setWishlist(!wishlist)}
+                                                aria-label="Add to wishlist"
                                             >
-                                                ♡
+                                                {isWishlisted ? "♥" : "♡"}
                                             </button>
 
                                             <img
