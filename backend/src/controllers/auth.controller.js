@@ -10,6 +10,15 @@ export async function login(req, res) {
   const config = req.app.locals.config;
   const token = await auth.issue(user.id, req.cookies[config.cookieName], config);
   res.cookie(config.cookieName, token, cookieOptions(config));
+  console.log("========== LOGIN ==========");
+  console.log("USER:", user.email);
+  console.log("COOKIE CONFIG:", {
+    secure: options.secure,
+    sameSite: options.sameSite,
+    httpOnly: options.httpOnly,
+    path: options.path
+  });
+  console.log("===========================");
   // Do not return the JWT to browser JavaScript.
   return sendData(res, { user }, 200, 'Signed in.');
 }
