@@ -74,7 +74,7 @@ export function Header({ onMenu }) {
           </span>
         </Link>
         <Link to="/wishlist">
-          <i class="fa-regular fa-heart" style="color: rgb(0, 0, 0);"></i>
+          <i className="fa-regular fa-heart" style={{color: "rgb(0, 0, 0)"}}></i>
         </Link>
         <span className="header-divider" />
 
