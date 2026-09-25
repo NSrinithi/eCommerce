@@ -10,6 +10,7 @@ export async function login(req, res) {
   const config = req.app.locals.config;
   const token = await auth.issue(user.id, req.cookies[config.cookieName], config);
   res.cookie(config.cookieName, token, cookieOptions(config));
+  const options = cookieOptions(config);
   console.log("========== LOGIN ==========");
   console.log("USER:", user.email);
   console.log("COOKIE CONFIG:", {
