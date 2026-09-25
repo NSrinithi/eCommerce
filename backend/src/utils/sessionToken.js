@@ -28,7 +28,7 @@ export function cookieOptions(config) {
   return {
     httpOnly: true,
     secure: config.isProduction,
-    sameSite:'lax',
+    sameSite:'none',
     path: '/api',
     // keep your existing maxAge / other options
   };
