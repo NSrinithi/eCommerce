@@ -161,10 +161,6 @@ export function AdminProductsPage() {
 
             await adminApi.deleteProduct(productId);
 
-            /*
-             * If page 2 has only one product and we delete it,
-             * automatically go back to page 1.
-             */
             if (products.length === 1 && page > 1) {
                 setPage((currentPage) => currentPage - 1);
                 return;
