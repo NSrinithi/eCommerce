@@ -1,798 +1,614 @@
-import { useEffect, useMemo, useState } from "react";
-import { adminApi } from "../../services/adminApi";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
-
-function formatCurrency(value) {
-    return `₹${Number(value || 0).toLocaleString("en-IN")}`;
-}
+import { adminApi } from "../../services/adminApi.js";
+import { LoadingScreen } from "../../components/ui/LoadingScreen.jsx";
+import { Alert } from "../../components/ui/Alert.jsx";
 
 export function AdminProductsPage() {
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    
+  const [products, setProducts] = useState([]);
 
-    const [search, setSearch] = useState("");
-    const [category, setCategory] = useState("All");
-    const [stockFilter, setStockFilter] = useState("All");
-    const [sort, setSort] = useState("newest");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
 
-    const [selectedProducts, setSelectedProducts] = useState([]);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    totalPages: 1,
+    page: 1,
+    limit: 10,
+  });
 
-    async function loadProducts() {
-        try {
-            setLoading(true);
-            setError("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-            const response = await adminApi.getProducts(1, 50);
+  // ================================
+  // LOAD PRODUCTS
+  // ================================
+  async function loadProducts(currentPage = page) {
+    try {
+      setLoading(true);
+      setError("");
 
-            setProducts(
-                Array.isArray(response)
-                    ? response
-                    : []
-            );
-        } catch (err) {
-            setError(err.message || "Failed to load products.");
-        } finally {
-            setLoading(false);
+      const data = await adminApi.getProducts(currentPage, limit);
+
+      console.log("PRODUCT API RESPONSE:", data);
+
+      /*
+        Expected response:
+
+        {
+          products: [],
+          pagination: {
+            page: 1,
+            limit: 10,
+            total: 25,
+            totalPages: 3
+          }
         }
+      */
+
+      setProducts(
+        data?.products ||
+        data?.data ||
+        []
+      );
+
+      if (data?.pagination) {
+        setPagination(data.pagination);
+      }
+
+      /*
+        If your backend returns:
+        {
+          data: {
+            products: [],
+            pagination: {}
+          }
+        }
+
+        use this instead:
+
+        setProducts(data?.data?.products || []);
+
+        setPagination(data?.data?.pagination || {});
+      */
+
+    } catch (err) {
+      console.error(err);
+      setError(
+        err?.message ||
+        "Failed to load products."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ================================
+  // LOAD WHEN PAGE CHANGES
+  // ================================
+  useEffect(() => {
+    loadProducts(page);
+  }, [page]);
+
+  // ================================
+  // DELETE PRODUCT
+  // ================================
+  async function handleDelete(productId) {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this product?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await adminApi.deleteProduct(productId);
+
+      /*
+        Reload current page after delete.
+      */
+
+      await loadProducts(page);
+
+      /*
+        If the last item of a page was deleted,
+        move to previous page.
+      */
+
+      if (
+        products.length === 1 &&
+        page > 1
+      ) {
+        setPage(page - 1);
+      }
+
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err?.message ||
+        "Failed to delete product."
+      );
+    }
+  }
+
+  // ================================
+  // PAGE CHANGE
+  // ================================
+  function changePage(newPage) {
+    if (newPage < 1) return;
+
+    if (
+      pagination.totalPages &&
+      newPage > pagination.totalPages
+    ) {
+      return;
     }
 
-    useEffect(() => {
-        loadProducts();
-    }, []);
+    setPage(newPage);
 
-    async function handleDelete(product) {
-        const confirmed = window.confirm(
-            `Are you sure you want to delete "${product.name}"?`
-        );
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
 
-        if (!confirmed) return;
+  // ================================
+  // LOADING
+  // ================================
+  if (loading && products.length === 0) {
+    return <LoadingScreen />;
+  }
 
-        try {
-            await adminApi.deleteProduct(product._id);
+  // ================================
+  // RENDER
+  // ================================
+  return (
+    <main className="page">
 
-            setProducts((currentProducts) =>
-                currentProducts.filter(
-                    (item) => item._id !== product._id
-                )
-            );
+      {/* ================= HEADER ================= */}
 
-            setSelectedProducts((current) =>
-                current.filter((id) => id !== product._id)
-            );
-        } catch (err) {
-            alert(err.message || "Failed to delete product.");
-        }
-    }
+      <div className="page-header">
 
-    function toggleProduct(id) {
-        setSelectedProducts((current) =>
-            current.includes(id)
-                ? current.filter((item) => item !== id)
-                : [...current, id]
-        );
-    }
+        <div>
+          <h1>Products</h1>
 
-    function toggleAll() {
-        if (selectedProducts.length === filteredProducts.length) {
-            setSelectedProducts([]);
-        } else {
-            setSelectedProducts(
-                filteredProducts.map((product) => product._id)
-            );
-        }
-    }
+          <p className="muted">
+            Manage your products and inventory.
+          </p>
+        </div>
 
-    const categories = useMemo(() => {
-        return [
-            "All",
-            ...new Set(
-                products
-                    .map((product) => product.category)
-                    .filter(Boolean)
-            ),
-        ];
-    }, [products]);
+        <Link
+          to="/admin/products/new"
+          className="button"
+        >
+          + Add Product
+        </Link>
 
-    const filteredProducts = useMemo(() => {
-        let result = [...products];
+      </div>
 
-        if (search.trim()) {
-            const query = search.toLowerCase();
 
-            result = result.filter((product) =>
-                [
-                    product.name,
-                    product.brand,
-                    product.category,
-                ]
-                    .filter(Boolean)
-                    .some((value) =>
-                        value.toLowerCase().includes(query)
-                    )
-            );
-        }
+      {/* ================= ERROR ================= */}
 
-        if (category !== "All") {
-            result = result.filter(
-                (product) => product.category === category
-            );
-        }
+      {error && (
+        <Alert>
+          {error}
+        </Alert>
+      )}
 
-        if (stockFilter === "In stock") {
-            result = result.filter(
-                (product) => product.stock > 15
-            );
-        }
 
-        if (stockFilter === "Low stock") {
-            result = result.filter(
-                (product) =>
-                    product.stock > 0 &&
-                    product.stock <= 15
-            );
-        }
+      {/* ================= SUMMARY ================= */}
 
-        if (stockFilter === "Out of stock") {
-            result = result.filter(
-                (product) => product.stock <= 0
-            );
-        }
+      <div className="admin-products-summary">
 
-        if (sort === "price-low") {
-            result.sort(
-                (a, b) =>
-                    (a.discountPrice ?? a.price) -
-                    (b.discountPrice ?? b.price)
-            );
-        }
+        <div>
+          <strong>
+            {pagination.total || 0}
+          </strong>
 
-        if (sort === "price-high") {
-            result.sort(
-                (a, b) =>
-                    (b.discountPrice ?? b.price) -
-                    (a.discountPrice ?? a.price)
-            );
-        }
+          <span className="muted">
+            Total Products
+          </span>
+        </div>
 
-        if (sort === "rating") {
-            result.sort(
-                (a, b) =>
-                    (b.rating || 0) -
-                    (a.rating || 0)
-            );
-        }
+        <div>
+          <strong>
+            {page}
+          </strong>
 
-        if (sort === "stock") {
-            result.sort(
-                (a, b) =>
-                    (a.stock || 0) -
-                    (b.stock || 0)
-            );
-        }
+          <span className="muted">
+            Current Page
+          </span>
+        </div>
 
-        if (sort === "newest") {
-            result.sort(
-                (a, b) =>
-                    new Date(b.createdAt || 0) -
-                    new Date(a.createdAt || 0)
-            );
-        }
+        <div>
+          <strong>
+            {pagination.totalPages || 1}
+          </strong>
 
-        return result;
-    }, [
-        products,
-        search,
-        category,
-        stockFilter,
-        sort,
-    ]);
+          <span className="muted">
+            Total Pages
+          </span>
+        </div>
 
-    const totalProducts = products.length;
+      </div>
 
-    const lowStockCount = products.filter(
-        (product) =>
-            product.stock > 0 &&
-            product.stock <= 15
-    ).length;
 
-    const outOfStockCount = products.filter(
-        (product) => product.stock <= 0
-    ).length;
+      {/* ================= PRODUCTS ================= */}
 
-    if (loading) {
-        return (
-            <div className="admin-products-page">
-                <div className="admin-loading-card">
-                    <div className="admin-spinner"></div>
-                    <span>Loading products...</span>
-                </div>
-            </div>
-        );
-    }
+      {!loading && products.length === 0 ? (
 
-    if (error) {
-        return (
-            <div className="admin-products-page">
-                <div className="admin-error-card">
-                    <strong>Something went wrong</strong>
-                    <span>{error}</span>
+        <div className="empty-state">
 
-                    <button
-                        onClick={loadProducts}
-                        className="admin-retry-button"
+          <h2>
+            No products found
+          </h2>
+
+          <p className="muted">
+            Add your first product to get started.
+          </p>
+
+          <Link
+            to="/admin/products/new"
+            className="button"
+          >
+            Add Product
+          </Link>
+
+        </div>
+
+      ) : (
+
+        <>
+
+          <div className="admin-products-table-wrap">
+
+            <table className="admin-products-table">
+
+              <thead>
+
+                <tr>
+
+                  <th>Product</th>
+
+                  <th>Category</th>
+
+                  <th>Price</th>
+
+                  <th>Stock</th>
+
+                  <th>Rating</th>
+
+                  <th>Status</th>
+
+                  <th>Actions</th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {products.map((product) => {
+
+                  const price =
+                    Number(product.price || 0);
+
+                  const discountPrice =
+                    Number(
+                      product.discountPrice ||
+                      product.price ||
+                      0
+                    );
+
+                  const stock =
+                    Number(product.stock || 0);
+
+                  const rating =
+                    Number(product.rating || 0);
+
+                  let stockStatus =
+                    "In stock";
+
+                  if (stock === 0) {
+                    stockStatus = "Out of stock";
+                  } else if (stock <= 5) {
+                    stockStatus = "Critical";
+                  } else if (stock <= 10) {
+                    stockStatus = "Low stock";
+                  }
+
+                  return (
+
+                    <tr
+                      key={product._id}
                     >
-                        Try again
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
-    return (
-        <div className="admin-products-page">
+                      {/* PRODUCT */}
 
-            {/* ================= HEADER ================= */}
+                      <td>
 
-            <div className="products-topbar">
+                        <div className="admin-product-cell">
 
-                <div>
-                    <div className="admin-breadcrumb">
-                        Admin
-                        <span>/</span>
-                        Products
-                    </div>
+                          <div className="admin-product-image">
 
-                    <h1>Products</h1>
+                            {product.images?.[0] ? (
 
-                    <p>
-                        Manage your product catalog, inventory and pricing.
-                    </p>
-                </div>
+                              <img
+                                src={product.images[0]}
+                                alt={product.name}
+                              />
 
-                <Link
-                    to="/admin/add"
-                    className="add-product-button"
-                >
-                    <span>＋</span>
-                    Add product
-                </Link>
+                            ) : (
 
-            </div>
+                              <div className="no-image">
+                                No image
+                              </div>
 
+                            )}
 
-            {/* ================= OVERVIEW CARDS ================= */}
+                          </div>
 
-            <div className="product-overview">
 
-                <div className="overview-card">
-                    <div className="overview-icon">📦</div>
+                          <div>
 
-                    <div>
-                        <span>Total products</span>
-                        <strong>{totalProducts}</strong>
-                    </div>
-                </div>
+                            <strong>
+                              {product.name}
+                            </strong>
 
-                <div className="overview-card">
-                    <div className="overview-icon">🟢</div>
+                            {product.brand && (
+                              <span className="muted">
+                                {product.brand}
+                              </span>
+                            )}
 
-                    <div>
-                        <span>In catalog</span>
-                        <strong>
-                            {totalProducts - lowStockCount - outOfStockCount}
-                        </strong>
-                    </div>
-                </div>
+                            {product.sku && (
+                              <span className="muted">
+                                SKU #{product.sku}
+                              </span>
+                            )}
 
-                <div className="overview-card warning-card">
-                    <div className="overview-icon">⚠️</div>
-
-                    <div>
-                        <span>Low stock</span>
-                        <strong>{lowStockCount}</strong>
-                    </div>
-                </div>
-
-                <div className="overview-card danger-card">
-                    <div className="overview-icon">○</div>
-
-                    <div>
-                        <span>Out of stock</span>
-                        <strong>{outOfStockCount}</strong>
-                    </div>
-                </div>
-
-            </div>
-
-
-            {/* ================= TOOLBAR ================= */}
-
-            <div className="products-toolbar">
-
-                <div className="product-search">
-
-                    <span>⌕</span>
-
-                    <input
-                        type="text"
-                        placeholder="Search products..."
-                        value={search}
-                        onChange={(e) =>
-                            setSearch(e.target.value)
-                        }
-                    />
-
-                    {search && (
-                        <button
-                            onClick={() => setSearch("")}
-                            className="clear-search"
-                        >
-                            ×
-                        </button>
-                    )}
-
-                </div>
-
-
-                <div className="toolbar-filters">
-
-                    <select
-                        value={category}
-                        onChange={(e) =>
-                            setCategory(e.target.value)
-                        }
-                    >
-                        {categories.map((item) => (
-                            <option
-                                key={item}
-                                value={item}
-                            >
-                                {item === "All"
-                                    ? "All categories"
-                                    : item}
-                            </option>
-                        ))}
-                    </select>
-
-
-                    <select
-                        value={stockFilter}
-                        onChange={(e) =>
-                            setStockFilter(e.target.value)
-                        }
-                    >
-                        <option value="All">
-                            All stock
-                        </option>
-
-                        <option value="In stock">
-                            In stock
-                        </option>
-
-                        <option value="Low stock">
-                            Low stock
-                        </option>
-
-                        <option value="Out of stock">
-                            Out of stock
-                        </option>
-                    </select>
-
-
-                    <select
-                        value={sort}
-                        onChange={(e) =>
-                            setSort(e.target.value)
-                        }
-                    >
-                        <option value="newest">
-                            Newest
-                        </option>
-
-                        <option value="price-low">
-                            Price: Low to high
-                        </option>
-
-                        <option value="price-high">
-                            Price: High to low
-                        </option>
-
-                        <option value="rating">
-                            Highest rated
-                        </option>
-
-                        <option value="stock">
-                            Lowest stock
-                        </option>
-                    </select>
-
-                </div>
-
-            </div>
-
-
-            {/* ================= BULK BAR ================= */}
-
-            {selectedProducts.length > 0 && (
-                <div className="bulk-action-bar">
-
-                    <div>
-                        <strong>
-                            {selectedProducts.length}
-                        </strong>
-
-                        <span>
-                            products selected
-                        </span>
-                    </div>
-
-                    <div>
-                        <button>
-                            Edit
-                        </button>
-
-                        <button className="bulk-danger">
-                            Delete
-                        </button>
-                    </div>
-
-                </div>
-            )}
-
-
-            {/* ================= PRODUCT TABLE ================= */}
-
-            <div className="products-table-card">
-
-                <div className="products-table-header">
-
-                    <div>
-                        <h2>Product catalog</h2>
-
-                        <p>
-                            {filteredProducts.length} products
-                            {search && ` matching "${search}"`}
-                        </p>
-                    </div>
-
-                    <button
-                        className="refresh-button"
-                        onClick={loadProducts}
-                    >
-                        ↻ Refresh
-                    </button>
-
-                </div>
-
-
-                <div className="products-table-scroll">
-
-                    <table className="modern-products-table">
-
-                        <thead>
-
-                            <tr>
-
-                                <th>Product</th>
-
-                                <th>Category</th>
-
-                                <th>Price</th>
-
-                                <th>Inventory</th>
-
-                                <th>Rating</th>
-
-                                <th>Status</th>
-
-                                <th className="actions-column">
-                                    Actions
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-
-                        <tbody>
-
-                            {filteredProducts.map((product) => {
-
-                                const image =
-                                    product.images?.[0] ||
-                                    "https://via.placeholder.com/80";
-
-                                const sellingPrice =
-                                    product.discountPrice ??
-                                    product.price;
-
-                                const hasDiscount =
-                                    product.discountPrice &&
-                                    product.discountPrice <
-                                    product.price;
-
-                                const stockStatus =
-                                    product.stock <= 0
-                                        ? "out"
-                                        : product.stock <= 5
-                                            ? "critical"
-                                            : product.stock <= 15
-                                                ? "low"
-                                                : "good";
-
-                                return (
-
-                                    <tr key={product._id}>
-
-                                        {/* PRODUCT */}
-
-                                        <td>
-
-                                            <div className="modern-product-info">
-
-                                                <div className="product-image-wrapper">
-
-                                                    <img
-                                                        src={image}
-                                                        alt={product.name}
-                                                    />
-
-                                                </div>
-
-                                                <div className="product-name-wrapper">
-
-                                                    <strong>
-                                                        {product.name}
-                                                    </strong>
-
-                                                    <span>
-                                                        {product.brand ||
-                                                            "No brand"}
-                                                    </span>
-
-                                                    <small>
-                                                        SKU #
-                                                        {product._id
-                                                            ?.slice(-6)
-                                                            .toUpperCase()}
-                                                    </small>
-
-                                                </div>
-
-                                            </div>
-
-                                        </td>
-
-
-                                        {/* CATEGORY */}
-
-                                        <td>
-
-                                            <span className="category-pill">
-                                                {product.category ||
-                                                    "Uncategorized"}
-                                            </span>
-
-                                        </td>
-
-
-                                        {/* PRICE */}
-
-                                        <td>
-
-                                            <div className="modern-price">
-
-                                                <strong>
-                                                    {formatCurrency(
-                                                        sellingPrice
-                                                    )}
-                                                </strong>
-
-                                                {hasDiscount && (
-                                                    <span>
-                                                        {formatCurrency(
-                                                            product.price
-                                                        )}
-                                                    </span>
-                                                )}
-
-                                            </div>
-
-                                        </td>
-
-
-                                        {/* INVENTORY */}
-
-                                        <td>
-
-                                            <div className="inventory-cell">
-
-                                                <strong>
-                                                    {product.stock}
-                                                </strong>
-
-                                                <span>
-                                                    units
-                                                </span>
-
-                                            </div>
-
-                                        </td>
-
-
-                                        {/* RATING */}
-
-                                        <td>
-
-                                            <div className="rating-cell">
-
-                                                <span>
-                                                    ★
-                                                </span>
-
-                                                <strong>
-                                                    {product.rating ||
-                                                        "0.0"}
-                                                </strong>
-
-                                                <small>
-                                                    ({product.numReviews ||
-                                                        0})
-                                                </small>
-
-                                            </div>
-
-                                        </td>
-
-
-                                        {/* STATUS */}
-
-                                        <td>
-
-                                            {stockStatus === "good" && (
-                                                <span className="status-pill success">
-                                                    <i></i>
-                                                    In stock
-                                                </span>
-                                            )}
-
-                                            {stockStatus === "low" && (
-                                                <span className="status-pill warning">
-                                                    <i></i>
-                                                    Low stock
-                                                </span>
-                                            )}
-
-                                            {stockStatus === "critical" && (
-                                                <span className="status-pill danger">
-                                                    <i></i>
-                                                    Critical
-                                                </span>
-                                            )}
-
-                                            {stockStatus === "out" && (
-                                                <span className="status-pill danger">
-                                                    <i></i>
-                                                    Out of stock
-                                                </span>
-                                            )}
-
-                                        </td>
-
-
-                                        {/* ACTIONS */}
-
-                                        <td>
-
-                                            <div className="modern-actions">
-
-                                                <Link
-                                                    to={`/admin/edit/${product._id}`}
-                                                    className="icon-action edit"
-                                                    title="Edit product"
-                                                >
-                                                    ✎
-                                                </Link>
-
-                                                <button
-                                                    className="icon-action delete"
-                                                    title="Delete product"
-                                                    onClick={() =>
-                                                        handleDelete(
-                                                            product
-                                                        )
-                                                    }
-                                                >
-                                                    🗑
-                                                </button>
-
-                                            </div>
-
-                                        </td>
-
-                                    </tr>
-
-                                );
-                            })}
-
-                        </tbody>
-
-                    </table>
-
-
-                    {/* EMPTY */}
-
-                    {filteredProducts.length === 0 && (
-
-                        <div className="products-empty">
-
-                            <div>
-                                🛍️
-                            </div>
-
-                            <h3>
-                                No products found
-                            </h3>
-
-                            <p>
-                                Try changing your search or filters.
-                            </p>
-
-                            <button
-                                onClick={() => {
-                                    setSearch("");
-                                    setCategory("All");
-                                    setStockFilter("All");
-                                }}
-                            >
-                                Clear filters
-                            </button>
+                          </div>
 
                         </div>
 
-                    )}
-
-                </div>
+                      </td>
 
 
-                {/* ================= FOOTER ================= */}
+                      {/* CATEGORY */}
 
-                <div className="products-table-footer">
+                      <td>
 
-                    <span>
-                        Showing{" "}
-                        <strong>
-                            {filteredProducts.length}
-                        </strong>{" "}
-                        of{" "}
-                        <strong>
-                            {products.length}
-                        </strong>{" "}
-                        products
-                    </span>
+                        {product.category ||
+                          "Uncategorized"}
 
-                    <div className="table-page-buttons">
+                      </td>
 
-                        <button disabled>
-                            ←
-                        </button>
 
-                        <button className="active">
-                            1
-                        </button>
+                      {/* PRICE */}
 
-                        <button disabled>
-                            →
-                        </button>
+                      <td>
 
-                    </div>
+                        <div className="price-cell">
 
-                </div>
+                          <strong>
+                            ₹
+                            {discountPrice.toLocaleString(
+                              "en-IN"
+                            )}
+                          </strong>
+
+                          {price >
+                            discountPrice && (
+
+                            <span className="old-price">
+                              ₹
+                              {price.toLocaleString(
+                                "en-IN"
+                              )}
+                            </span>
+
+                          )}
+
+                        </div>
+
+                      </td>
+
+
+                      {/* STOCK */}
+
+                      <td>
+
+                        {stock}
+
+                        <span className="muted">
+                          {" "}units
+                        </span>
+
+                      </td>
+
+
+                      {/* RATING */}
+
+                      <td>
+
+                        <span className="rating">
+                          ★
+                          {rating.toFixed(1)}
+                        </span>
+
+                        {product.numReviews !==
+                          undefined && (
+
+                          <span className="muted">
+                            {" "}
+                            ({product.numReviews})
+                          </span>
+
+                        )}
+
+                      </td>
+
+
+                      {/* STATUS */}
+
+                      <td>
+
+                        <span
+                          className={`stock-status stock-status--${stockStatus
+                            .toLowerCase()
+                            .replace(" ", "-")}`}
+                        >
+
+                          {stockStatus}
+
+                        </span>
+
+                      </td>
+
+
+                      {/* ACTIONS */}
+
+                      <td>
+
+                        <div className="admin-product-actions">
+
+                          <Link
+                            to={`/admin/edit/${product._id}`}
+                            className="icon-button"
+                            title="Edit product"
+                          >
+                            ✎
+                          </Link>
+
+
+                          <button
+                            type="button"
+                            className="icon-button delete-button"
+                            title="Delete product"
+                            onClick={() =>
+                              handleDelete(
+                                product._id
+                              )
+                            }
+                          >
+                            🗑
+                          </button>
+
+                        </div>
+
+                      </td>
+
+                    </tr>
+
+                  );
+
+                })}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+
+          {/* ================= PAGINATION ================= */}
+
+          {pagination.totalPages > 1 && (
+
+            <div className="pagination">
+
+              {/* PREVIOUS */}
+
+              <button
+                type="button"
+                className="pagination-button"
+                disabled={page === 1}
+                onClick={() =>
+                  changePage(page - 1)
+                }
+              >
+                ←
+              </button>
+
+
+              {/* PAGE NUMBERS */}
+
+              {Array.from(
+                {
+                  length:
+                    pagination.totalPages,
+                },
+                (_, index) => index + 1
+              ).map((pageNumber) => (
+
+                <button
+                  key={pageNumber}
+                  type="button"
+                  className={`pagination-button ${
+                    pageNumber === page
+                      ? "active"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    changePage(pageNumber)
+                  }
+                >
+                  {pageNumber}
+                </button>
+
+              ))}
+
+
+              {/* NEXT */}
+
+              <button
+                type="button"
+                className="pagination-button"
+                disabled={
+                  page ===
+                  pagination.totalPages
+                }
+                onClick={() =>
+                  changePage(page + 1)
+                }
+              >
+                →
+              </button>
 
             </div>
 
-        </div>
-    );
+          )}
+
+
+          {/* ================= PAGE INFO ================= */}
+
+          <div className="pagination-info">
+
+            Showing{" "}
+
+            <strong>
+              {products.length}
+            </strong>{" "}
+
+            products on page{" "}
+
+            <strong>
+              {page}
+            </strong>{" "}
+
+            of{" "}
+
+            <strong>
+              {pagination.totalPages || 1}
+            </strong>
+
+          </div>
+
+        </>
+
+      )}
+
+    </main>
+  );
 }
