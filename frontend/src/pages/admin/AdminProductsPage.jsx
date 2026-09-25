@@ -10,6 +10,7 @@ export function AdminProductsPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [wishlist, setWishlist] = useState({});
 
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All");
@@ -474,18 +475,6 @@ export function AdminProductsPage() {
 
                             <tr>
 
-                                {/* <th className="checkbox-column">
-                                    <input
-                                        type="checkbox"
-                                        checked={
-                                            filteredProducts.length > 0 &&
-                                            selectedProducts.length ===
-                                            filteredProducts.length
-                                        }
-                                        onChange={toggleAll}
-                                    />
-                                </th> */}
-
                                 <th>Product</th>
 
                                 <th>Category</th>
@@ -537,33 +526,35 @@ export function AdminProductsPage() {
 
                                     <tr key={product._id}>
 
-                                        {/* CHECKBOX */}
-
-                                        {/* <td>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedProducts.includes(
-                                                    product._id
-                                                )}
-                                                onChange={() =>
-                                                    toggleProduct(
-                                                        product._id
-                                                    )
-                                                }
-                                            />
-                                        </td> */}
-
-
                                         {/* PRODUCT */}
 
                                         <td>
 
                                             <div className="modern-product-info">
 
-                                                <div className="product-image-wrapper">
+                                                <div className="product-image-wrap">
+
+                                                    {discount > 0 && (
+                                                        <span className="product-badge">
+                                                            {discount}% OFF
+                                                        </span>
+                                                    )}
+
+                                                    {/* Wishlist */}
+                                                    <button
+                                                        type="button"
+                                                        className="wishlist-button"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        aria-label="Add to wishlist"
+                                                    >
+                                                        ♡
+                                                    </button>
 
                                                     <img
-                                                        src={image}
+                                                        src={
+                                                            product.images?.[0] ||
+                                                            FALLBACK_IMAGE
+                                                        }
                                                         alt={product.name}
                                                     />
 
