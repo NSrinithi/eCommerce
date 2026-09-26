@@ -70,7 +70,7 @@ export function Header({ onMenu }) {
             )}
           </span>
         </Link>
-        <Link to="/wishlist">
+        <Link to="/wishlist" className='wishList_cart'>
           <i className="fa-regular fa-heart" style={{color: "rgb(0, 0, 0)"}}></i>
         </Link>
         <Link to="/profile">

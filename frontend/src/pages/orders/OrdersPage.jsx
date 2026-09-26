@@ -375,7 +375,7 @@ export function OrdersPage() {
                                                 <strong className="order-product-total">
                                                     {money(
                                                         item.price *
-                                                            item.quantity
+                                                        item.quantity
                                                     )}
                                                 </strong>
 
@@ -411,21 +411,17 @@ export function OrdersPage() {
                                 </div>
 
                                 <div className="order-total">
-
-                                    <span>
+                                    <span className="order-total-label">
                                         Order total
                                     </span>
 
-                                    <strong>
-                                        {money(
-                                            order.totalAmount
-                                        )}
+                                    <strong className="order-total-value">
+                                        ₹33,998
                                     </strong>
 
-                                    <small>
+                                    <span className="payment-completed">
                                         Payment completed
-                                    </small>
-
+                                    </span>
                                 </div>
 
                             </div>

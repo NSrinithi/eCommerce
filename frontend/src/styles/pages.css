@@ -5114,6 +5114,18 @@ html[data-theme="dark"] .payment-pending {
     color: #fbbf24;
 }
 
+html[data-theme="dark"] .order-total-label {
+    color: #94a3b8;
+}
+
+html[data-theme="dark"] .order-total-value {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .payment-completed {
+    color: #4ade80;
+}
+
 
 /* =========================================================
    STATUS CONTROL
@@ -5290,6 +5302,30 @@ html[data-theme="dark"] .payment-pending {
     margin-top: 5px;
 
     word-break: break-word;
+}
+
+.order-total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.order-total-label {
+    color: #94a3b8;
+    font-size: 15px;
+}
+
+.order-total-value {
+    color: #f8fafc;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.payment-completed {
+    color: #4ade80;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 

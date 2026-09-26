@@ -62,7 +62,10 @@
     color: var(--text);
     text-decoration: none;
 }
-
+.wishList_cart{
+    color: var(--text);
+    text-decoration: none;
+}
 .cart-icon-wrap {
     position: relative;
     display: inline-flex;
