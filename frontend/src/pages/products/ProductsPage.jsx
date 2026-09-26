@@ -10,7 +10,6 @@ const CATEGORIES = [
     "Audio",
     "Computer Accessories",
     "Books & Reading",
-    "Kitchen",
     "Kitchen Appliances",
     "Toys",
     "Watches",

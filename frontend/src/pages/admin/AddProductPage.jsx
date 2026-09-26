@@ -193,6 +193,30 @@ export function AddProductPage() {
                                         Electronics
                                     </option>
 
+                                    <option value="Audio">
+                                        Audio
+                                    </option>
+
+                                    <option value="Computer Accessories">
+                                        Computer Accessories
+                                    </option>
+
+                                    <option value="Books & Reading">
+                                        Books & Reading
+                                    </option>
+
+                                    <option value="Kitchen Appliances">
+                                        Kitchen Appliances
+                                    </option>
+
+                                    <option value="Toys">
+                                        Toys
+                                    </option>
+
+                                    <option value="Watches">
+                                        Watches
+                                    </option>
+
                                     <option value="Fashion">
                                         Fashion
                                     </option>
@@ -201,20 +225,8 @@ export function AddProductPage() {
                                         Beauty & Personal Care
                                     </option>
 
-                                    <option value="Bags">
-                                        Bags
-                                    </option>
-
-                                    <option value="Shoes">
-                                        Shoes
-                                    </option>
-
-                                    <option value="Home">
-                                        Home
-                                    </option>
-
-                                    <option value="Accessories">
-                                        Accessories
+                                    <option value="Travel">
+                                        Travel
                                     </option>
                                 </select>
                             </div>
