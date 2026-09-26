@@ -17,11 +17,12 @@ import { EditProductPage } from '../pages/admin/EditProductPage.jsx';
 import { AdminOrderPage } from '../pages/admin/AdminOrderPage.jsx';
 import { WishlistPage } from '../pages/wishList/WishlistPage.jsx';
 import { OrdersPage } from '../pages/orders/OrdersPage.jsx';
+import { RoleRedirect } from '../pages/RoleRedirectPage.jsx';
 import { CheckOutPage } from '../pages/checkout/CheckOutPage.jsx';
 import { NotFoundPage } from '../pages/NotFoundPage.jsx';
 export function AppRoutes() {
   return <Routes>
-    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/" element={<RoleRedirect/>} />
     <Route element={<GuestRoute />}>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
