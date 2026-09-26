@@ -6,7 +6,7 @@ export function getNavigation(role) {
       {
         path: '/admin/dashboard',
         label: 'Dashboard',
-        icon: 'grid',
+        icon: 'layers',
       },
       {
         path: '/admin/products',
@@ -16,7 +16,7 @@ export function getNavigation(role) {
       {
         path: '/admin/orders',
         label: 'Orders',
-        icon: 'grid',
+        icon: 'check',
       },
       {
         path: '/profile',
