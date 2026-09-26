@@ -143,7 +143,6 @@ export function WishlistPage() {
         </div>)
 
     }
-}
 
 
 return (
@@ -355,3 +354,4 @@ return (
 
     </main>
 );
+}
