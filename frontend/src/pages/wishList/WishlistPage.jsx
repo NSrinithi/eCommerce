@@ -3,6 +3,7 @@ import { wishListApi } from "../../services/wishListApi.js";
 import { cartApi } from "../../services/cartApi.js";
 import { LoadingScreen } from "../../components/ui/LoadingScreen.jsx";
 import { Alert } from "../../components/ui/Alert.jsx";
+import { Link } from "react-router";
 
 const FALLBACK_IMAGE =
     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKE5daVJDAxBZONI4RfP1pM3LxWfx5qtIIg3WLv_7ISw&s=10";
