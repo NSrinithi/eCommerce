@@ -70,8 +70,12 @@ export function Header({ onMenu }) {
             )}
           </span>
         </Link>
-        <Link to="/wishlist" className='wishList_cart'>
-          <i className="fa-regular fa-heart" style={{color: "rgb(0, 0, 0)"}}></i>
+        <Link
+          to="/wishlist"
+          className="wishList_cart"
+          aria-label="Wishlist"
+        >
+          <i className="fa-regular fa-heart"></i>
         </Link>
         <Link to="/profile">
           <span className="avatar cursor-pointer" title={user.name}>

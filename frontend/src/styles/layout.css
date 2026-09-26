@@ -55,17 +55,45 @@
 .cursor-pointer{
   cursor: pointer;
 }
-.header-cart {
+/* =========================
+   HEADER CART & WISHLIST
+   ========================= */
+
+.header-cart,
+.wishList_cart {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: var(--text);
     text-decoration: none;
+    transition: color 0.2s ease, transform 0.2s ease;
 }
-.wishList_cart{
-    color: var(--text);
-    text-decoration: none;
+
+.header-cart:hover,
+.wishList_cart:hover {
+    color: var(--brand);
 }
+
+.header-cart i,
+.wishList_cart i {
+    color: inherit;
+    font-size: 19px;
+}
+
+.wishList_cart {
+    width: 32px;
+    height: 32px;
+}
+
+.wishList_cart i {
+    font-size: 20px;
+}
+
+
+/* =========================
+   CART
+   ========================= */
+
 .cart-icon-wrap {
     position: relative;
     display: inline-flex;
@@ -76,6 +104,7 @@
 }
 
 .cart-icon-wrap i {
+    color: inherit;
     font-size: 18px;
 }
 
