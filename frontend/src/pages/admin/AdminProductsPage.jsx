@@ -275,7 +275,7 @@ export function AdminProductsPage() {
                     </button>
 
                     <Link
-                        to="/admin/products"
+                        to="/admin/add"
                         className="products-add-btn"
                     >
                         <span>+</span>
