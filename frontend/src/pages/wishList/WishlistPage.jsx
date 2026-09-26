@@ -133,12 +133,27 @@ export function WishlistPage() {
     return (
         <main className="page wishlist-page">
 
+            {!error && products.length === 0 && (
+
+                <div className="cart-empty">
+                    <div className="cart-empty-icon">
+                        ♡
+                    </div>
+                    <h2>Your Wishlist is empty</h2>
+                    <p>Looks like you haven’t added anything yet. Explore the store and find something you like.</p>
+                    <Link to="/products" className="button button--primary">
+                        Browse products
+                    </Link>
+                </div>
+
+            )}
+
             {/* HEADER */}
 
             <div className="page-header">
 
                 <div>
-                    <h1>My Wishlist ❤️</h1>
+                    <h1>My Wishlist ♡</h1>
 
                     <p className="muted">
                         Products you've saved for later.
@@ -166,20 +181,7 @@ export function WishlistPage() {
 
             {/* EMPTY */}
 
-            {!error && products.length === 0 && (
 
-                <div className="cart-empty">
-                    <div className="cart-empty-icon">
-                        ♡
-                    </div>
-                    <h2>Your Wishlist is empty</h2>
-                    <p>Looks like you haven’t added anything yet. Explore the store and find something you like.</p>
-                    <Link to="/products" className="button button--primary">
-                        Browse products
-                    </Link>
-                </div>
-
-            )}
 
 
             {/* PRODUCTS */}
@@ -323,8 +325,8 @@ export function WishlistPage() {
 
                                     <button
                                         className={`button button--primary ${isAdded
-                                                ? "is-added"
-                                                : ""
+                                            ? "is-added"
+                                            : ""
                                             }`}
                                         onClick={() =>
                                             addToCart(
