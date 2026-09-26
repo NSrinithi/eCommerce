@@ -129,235 +129,229 @@ export function WishlistPage() {
         return <LoadingScreen />;
     }
 
+    if (!error && products.length === 0 ) {
 
-    return (
-        <main className="page wishlist-page">
+        return (<div className="cart-empty">
+            <div className="cart-empty-icon">
+                ♡
+            </div>
+            <h2>Your Wishlist is empty</h2>
+            <p>Looks like you haven’t added anything yet. Explore the store and find something you like.</p>
+            <Link to="/products" className="button button--primary">
+                Browse products
+            </Link>
+        </div>)
 
-            {!error && products.length === 0 && (
+    }
+}
 
-                <div className="cart-empty">
-                    <div className="cart-empty-icon">
-                        ♡
-                    </div>
-                    <h2>Your Wishlist is empty</h2>
-                    <p>Looks like you haven’t added anything yet. Explore the store and find something you like.</p>
-                    <Link to="/products" className="button button--primary">
-                        Browse products
-                    </Link>
-                </div>
 
-            )}
+return (
+    <main className="page wishlist-page">
 
-            {/* HEADER */}
+        {/* HEADER */}
 
-            <div className="page-header">
+        <div className="page-header">
 
-                <div>
-                    <h1>My Wishlist ♡</h1>
+            <div>
+                <h1>My Wishlist ♡</h1>
 
-                    <p className="muted">
-                        Products you've saved for later.
-                    </p>
-                </div>
+                <p className="muted">
+                    Products you've saved for later.
+                </p>
+            </div>
 
-                <span className="wishlist-count">
-                    {products.length}{" "}
-                    {products.length === 1
-                        ? "item"
-                        : "items"}
-                </span>
+            <span className="wishlist-count">
+                {products.length}{" "}
+                {products.length === 1
+                    ? "item"
+                    : "items"}
+            </span>
+
+        </div>
+
+
+        {/* ERROR */}
+
+        {error && (
+            <Alert>
+                {error}
+            </Alert>
+        )}
+
+        {/* PRODUCTS */}
+
+        {products.length > 0 && (
+
+            <div className="wishlist-grid">
+
+                {products.map((product) => {
+
+                    const discount =
+                        getDiscountPercent(
+                            product.price,
+                            product.discountPrice
+                        );
+
+                    const outOfStock =
+                        product.stock <= 0;
+
+                    const isAdded =
+                        added === product._id;
+
+
+                    return (
+
+                        <article
+                            className="wishlist-card"
+                            key={product._id}
+                        >
+
+                            {/* IMAGE */}
+
+                            <div className="wishlist-image-wrap">
+
+                                {discount > 0 && (
+                                    <span className="product-badge">
+                                        {discount}% OFF
+                                    </span>
+                                )}
+
+                                <button
+                                    type="button"
+                                    className="wishlist-remove"
+                                    onClick={() =>
+                                        removeProduct(
+                                            product._id
+                                        )
+                                    }
+                                    aria-label="Remove from wishlist"
+                                >
+                                    ♥
+                                </button>
+
+                                <img
+                                    src={
+                                        product.images?.[0] ||
+                                        FALLBACK_IMAGE
+                                    }
+                                    alt={product.name}
+                                />
+
+                            </div>
+
+
+                            {/* DETAILS */}
+
+                            <div className="wishlist-product-info">
+
+                                <p className="product-brand">
+                                    {product.brand}
+                                </p>
+
+                                <h2>
+                                    {product.name}
+                                </h2>
+
+
+                                {product.rating > 0 && (
+                                    <p className="product-rating">
+                                        {product.rating} ★
+                                    </p>
+                                )}
+
+
+                                {/* PRICE */}
+
+                                <div className="product-price-row">
+
+                                    <p className="product-price">
+                                        ₹
+                                        {Number(
+                                            product.discountPrice ??
+                                            product.price
+                                        ).toLocaleString("en-IN")}
+                                    </p>
+
+                                    {discount > 0 && (
+                                        <>
+                                            <p className="product-original-price">
+                                                ₹
+                                                {Number(
+                                                    product.price
+                                                ).toLocaleString(
+                                                    "en-IN"
+                                                )}
+                                            </p>
+
+                                            <p className="product-discount">
+                                                {discount}% off
+                                            </p>
+                                        </>
+                                    )}
+
+                                </div>
+
+
+                                {/* STOCK */}
+
+                                {outOfStock ? (
+
+                                    <p className="product-stock product-stock--out">
+                                        Out of stock
+                                    </p>
+
+                                ) : product.stock <= 5 ? (
+
+                                    <p className="product-stock product-stock--low">
+                                        Only {product.stock} left
+                                    </p>
+
+                                ) : (
+
+                                    <p className="product-stock">
+                                        In stock
+                                    </p>
+
+                                )}
+
+
+                                {/* BUTTON */}
+
+                                <button
+                                    className={`button button--primary ${isAdded
+                                        ? "is-added"
+                                        : ""
+                                        }`}
+                                    onClick={() =>
+                                        addToCart(
+                                            product._id
+                                        )
+                                    }
+                                    disabled={
+                                        outOfStock
+                                    }
+                                >
+
+                                    {outOfStock
+                                        ? "Out of stock"
+                                        : isAdded
+                                            ? "Added ✓"
+                                            : "Add to cart"}
+
+                                </button>
+
+                            </div>
+
+                        </article>
+
+                    );
+
+                })}
 
             </div>
 
+        )}
 
-            {/* ERROR */}
-
-            {error && (
-                <Alert>
-                    {error}
-                </Alert>
-            )}
-
-
-            {/* EMPTY */}
-
-
-
-
-            {/* PRODUCTS */}
-
-            {products.length > 0 && (
-
-                <div className="wishlist-grid">
-
-                    {products.map((product) => {
-
-                        const discount =
-                            getDiscountPercent(
-                                product.price,
-                                product.discountPrice
-                            );
-
-                        const outOfStock =
-                            product.stock <= 0;
-
-                        const isAdded =
-                            added === product._id;
-
-
-                        return (
-
-                            <article
-                                className="wishlist-card"
-                                key={product._id}
-                            >
-
-                                {/* IMAGE */}
-
-                                <div className="wishlist-image-wrap">
-
-                                    {discount > 0 && (
-                                        <span className="product-badge">
-                                            {discount}% OFF
-                                        </span>
-                                    )}
-
-                                    <button
-                                        type="button"
-                                        className="wishlist-remove"
-                                        onClick={() =>
-                                            removeProduct(
-                                                product._id
-                                            )
-                                        }
-                                        aria-label="Remove from wishlist"
-                                    >
-                                        ♥
-                                    </button>
-
-                                    <img
-                                        src={
-                                            product.images?.[0] ||
-                                            FALLBACK_IMAGE
-                                        }
-                                        alt={product.name}
-                                    />
-
-                                </div>
-
-
-                                {/* DETAILS */}
-
-                                <div className="wishlist-product-info">
-
-                                    <p className="product-brand">
-                                        {product.brand}
-                                    </p>
-
-                                    <h2>
-                                        {product.name}
-                                    </h2>
-
-
-                                    {product.rating > 0 && (
-                                        <p className="product-rating">
-                                            {product.rating} ★
-                                        </p>
-                                    )}
-
-
-                                    {/* PRICE */}
-
-                                    <div className="product-price-row">
-
-                                        <p className="product-price">
-                                            ₹
-                                            {Number(
-                                                product.discountPrice ??
-                                                product.price
-                                            ).toLocaleString("en-IN")}
-                                        </p>
-
-                                        {discount > 0 && (
-                                            <>
-                                                <p className="product-original-price">
-                                                    ₹
-                                                    {Number(
-                                                        product.price
-                                                    ).toLocaleString(
-                                                        "en-IN"
-                                                    )}
-                                                </p>
-
-                                                <p className="product-discount">
-                                                    {discount}% off
-                                                </p>
-                                            </>
-                                        )}
-
-                                    </div>
-
-
-                                    {/* STOCK */}
-
-                                    {outOfStock ? (
-
-                                        <p className="product-stock product-stock--out">
-                                            Out of stock
-                                        </p>
-
-                                    ) : product.stock <= 5 ? (
-
-                                        <p className="product-stock product-stock--low">
-                                            Only {product.stock} left
-                                        </p>
-
-                                    ) : (
-
-                                        <p className="product-stock">
-                                            In stock
-                                        </p>
-
-                                    )}
-
-
-                                    {/* BUTTON */}
-
-                                    <button
-                                        className={`button button--primary ${isAdded
-                                            ? "is-added"
-                                            : ""
-                                            }`}
-                                        onClick={() =>
-                                            addToCart(
-                                                product._id
-                                            )
-                                        }
-                                        disabled={
-                                            outOfStock
-                                        }
-                                    >
-
-                                        {outOfStock
-                                            ? "Out of stock"
-                                            : isAdded
-                                                ? "Added ✓"
-                                                : "Add to cart"}
-
-                                    </button>
-
-                                </div>
-
-                            </article>
-
-                        );
-
-                    })}
-
-                </div>
-
-            )}
-
-        </main>
-    );
-}
+    </main>
+);
