@@ -7828,3 +7828,79 @@ body {
         height: 34px;
     }
 }
+/* =========================================================
+   ADMIN ORDERS - MOBILE WIDTH FIX
+   ========================================================= */
+
+.admin-orders-page {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+/* Main admin orders content */
+.admin-orders-page .page-content,
+.admin-orders-page .orders-content {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* Order cards should use available width */
+.admin-orders-page .order-card {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 760px) {
+
+    /* Remove excessive outer spacing */
+    .admin-orders-page {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .admin-orders-page .page-content,
+    .admin-orders-page .orders-content {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 94px 16px 32px;
+        box-sizing: border-box;
+    }
+
+    /* Heading */
+    .admin-orders-page h1 {
+        margin-top: 0;
+    }
+
+    /* Statistics cards */
+    .admin-orders-page .stats-grid {
+        width: 100%;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    /* Individual statistic card */
+    .admin-orders-page .stat-card {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Order cards */
+    .admin-orders-page .order-card {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        box-sizing: border-box;
+    }
+}
