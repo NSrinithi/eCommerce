@@ -52,9 +52,6 @@ export function Header({ onMenu }) {
           aria-label="Open navigation">
           <Icon name="menu" />
         </button>
-        <strong>
-          {pageTitles[pathname] || 'Page'}
-        </strong>
       </div>
       <div className="header-actions">
         <ThemeControl />
